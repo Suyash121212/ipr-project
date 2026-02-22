@@ -71,13 +71,13 @@ export default function Footer() {
               <div className="flex items-start space-x-3">
                 <MapPin className="h-4 w-4 text-teal-400 mt-0.5 flex-shrink-0" />
                 <span className="text-gray-400">
-                  123 Legal Plaza, Suite 500
-                  <br /> New York, NY 10001
+                  123 Main Street, Suite 400<br />
+                  <br /> Pune - 411001, Maharashtra, India
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4 text-teal-400 flex-shrink-0" />
-                <span className="text-gray-400">+1 (555) 123-4567</span>
+                <span className="text-gray-400">+91 9878453838</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4 text-teal-400 flex-shrink-0" />
