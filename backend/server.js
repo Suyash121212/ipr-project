@@ -84,8 +84,6 @@ app.set('trust proxy', 1);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ip_secure_legal', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
 })
   .then(() => console.log('✅ Connected to MongoDB successfully'))
   .catch((error) => {

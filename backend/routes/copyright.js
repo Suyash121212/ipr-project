@@ -151,7 +151,7 @@ router.get('/user/:clerkUserId', async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    console.log(`[copyright] Fetching copyrights for user: ${req.params.clerkUserId}`);
+    //console.log(`[copyright] Fetching copyrights for user: ${req.params.clerkUserId}`);
 
     const copyrights = await Copyright.find({ 
       clerkUserId: req.params.clerkUserId 
@@ -164,7 +164,7 @@ router.get('/user/:clerkUserId', async (req, res) => {
       clerkUserId: req.params.clerkUserId 
     });
 
-    console.log(`[copyright] Found ${copyrights.length} copyrights for user ${req.params.clerkUserId}`);
+    //console.log(`[copyright] Found ${copyrights.length} copyrights for user ${req.params.clerkUserId}`);
 
     res.json({
       success: true,
@@ -195,7 +195,7 @@ router.get('/user/:clerkUserId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const payload = req.body;
-    console.log('[copyright] POST / - payload:', JSON.stringify(payload));
+   // console.log('[copyright] POST / - payload:', JSON.stringify(payload));
     
     if (!payload.title) {
       return res.status(400).json({ 
@@ -213,7 +213,7 @@ router.post('/', async (req, res) => {
     const copyright = new Copyright(payload);
     const saved = await copyright.save();
     
-    console.log('[copyright] created id:', saved._id);
+    //console.log('[copyright] created id:', saved._id);
     
     res.status(201).json({ 
       success: true, 
@@ -328,7 +328,9 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const updates = req.body;
-    const allowedUpdates = ['status', 'currentStep', 'applicationNumber', 'filingDate'];
+
+    // FIX 1: Added 'currentStage' and 'status' to allowed updates
+    const allowedUpdates = ['status', 'currentStep', 'currentStage', 'applicationNumber', 'filingDate'];
 
     const filteredUpdates = {};
     allowedUpdates.forEach(field => {
@@ -337,6 +339,11 @@ router.put('/:id', async (req, res) => {
       }
     });
 
+    // FIX 2: Parse currentStage as Number to avoid string/number type mismatch in MongoDB
+    if (filteredUpdates.currentStage !== undefined) {
+      filteredUpdates.currentStage = Number(filteredUpdates.currentStage);
+    }
+
     const copyright = await Copyright.findOneAndUpdate(
       {
         $or: [
@@ -344,7 +351,7 @@ router.put('/:id', async (req, res) => {
           { applicationNumber: req.params.id }
         ]
       },
-      filteredUpdates,
+      { $set: filteredUpdates },  // FIX 3: Use $set to avoid wiping other fields
       { new: true, runValidators: true }
     );
 
@@ -399,9 +406,9 @@ router.delete('/:id', async (req, res) => {
     }
 
     // 👇 If admin delete request → skip ownership match
-    if (isAdmin) {
-      console.log("🛑 Admin override: deleting copyright without user check");
-    }
+    // if (isAdmin) {
+    //   console.log("🛑 Admin override: deleting copyright without user check");
+    // }
 
     // File deletion block
     if (copyright.files?.length > 0) {
@@ -409,7 +416,7 @@ router.delete('/:id', async (req, res) => {
         try {
           if (fs.existsSync(file.path)) {
             fs.unlinkSync(file.path);
-            console.log(`Deleted file: ${file.path}`);
+           // console.log(`Deleted file: ${file.path}`);
           }
         } catch (error) {
           console.error(`Failed to delete file ${file.path}:`, error);
@@ -437,13 +444,13 @@ router.delete('/:id', async (req, res) => {
 // Upload primary work file
 router.post('/:id/primary-file', uploadUtils.upload.single('primary'), async (req, res) => {
   try {
-    console.log(`[copyright] POST /${req.params.id}/primary-file - file:`, req.file && {
-      originalname: req.file.originalname,
-      filename: req.file.filename,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-      path: req.file.path
-    });
+    // console.log(`[copyright] POST /${req.params.id}/primary-file - file:`, req.file && {
+    //   originalname: req.file.originalname,
+    //   filename: req.file.filename,
+    //   size: req.file.size,
+    //   mimetype: req.file.mimetype,
+    //   path: req.file.path
+    // });
     
     const copyright = await Copyright.findById(req.params.id);
     if (!copyright) {
@@ -466,7 +473,7 @@ router.post('/:id/primary-file', uploadUtils.upload.single('primary'), async (re
     copyright.files = [fileMeta, ...copyright.files];
     await copyright.save();
     
-    console.log('[copyright] after primary upload, id:', copyright._id, 'filesCount:', (copyright.files || []).length);
+    //console.log('[copyright] after primary upload, id:', copyright._id, 'filesCount:', (copyright.files || []).length);
 
     res.json({ 
       success: true, 
@@ -487,7 +494,7 @@ router.post('/:id/primary-file', uploadUtils.upload.single('primary'), async (re
 // Upload supporting documents
 router.post('/:id/supporting-documents', uploadUtils.upload.array('documents', 10), async (req, res) => {
   try {
-    console.log(`[copyright] POST /${req.params.id}/supporting-documents - files count:`, req.files && req.files.length);
+    //console.log(`[copyright] POST /${req.params.id}/supporting-documents - files count:`, req.files && req.files.length);
     
     const copyright = await Copyright.findById(req.params.id);
     if (!copyright) {
@@ -514,7 +521,7 @@ router.post('/:id/supporting-documents', uploadUtils.upload.array('documents', 1
     copyright.files.push(...docs);
     await copyright.save();
     
-    console.log('[copyright] after supporting upload, id:', copyright._id, 'filesCount:', (copyright.files || []).length);
+    //console.log('[copyright] after supporting upload, id:', copyright._id, 'filesCount:', (copyright.files || []).length);
 
     res.json({ 
       success: true, 

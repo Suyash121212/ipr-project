@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require("../models/counterModel");
 
 const documentSchema = new mongoose.Schema({
   filename: String,
@@ -33,7 +34,15 @@ const patentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // ADD THESE MISSING FIELDS:
+
+  // Admin sets this (1–6) to control user's progress timeline
+  currentStage: {
+    type: Number,
+    default: 1,
+    min: 1,
+    max: 6
+  },
+
   email: {
     type: String
   },
@@ -42,45 +51,73 @@ const patentSchema = new mongoose.Schema({
   },
   technicalDrawings: [documentSchema],
   supportingDocuments: [documentSchema],
+
+  // Tracks which step the filing wizard is on (1, 2, 3)
   currentStep: {
     type: Number,
     default: 1
   },
+
+  // Status enum - covers all statuses used by admin + frontend
   status: {
     type: String,
-    enum: ['draft', 'submitted', 'under-review', 'published', 'granted', 'rejected'],
+    enum: [
+      'draft',
+      'submitted',
+      'applied',
+      'under-review',
+      'under-examination',
+      'pending',
+      'published',
+      'objection',
+      'granted',
+      'approved',
+      'renewal',
+      'rejected',
+      'cancelled',
+      'expired'
+    ],
     default: 'draft'
   },
+
   applicationNumber: {
     type: String,
-    unique: true
+    unique: true,
+    // This allows multiple documents without applicationNumber
   },
   filingDate: {
     type: Date,
     default: Date.now
   },
-  // FIX: Change from String to Number to match frontend
+  priorityDate: {
+    type: Date
+  },
   completedDocuments: [{
-    type: Number  // Changed from String to Number
+    type: Number
   }],
-  // Make createdBy optional like Copyright model
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: false  // Make it optional
+    required: false
   }
 }, {
   timestamps: true
 });
 
-// Generate application number before saving
-patentSchema.pre('save', async function(next) {
+// Auto-generate application number only when status changes to 'submitted'
+patentSchema.pre("save", async function () {
   if (this.isNew && !this.applicationNumber) {
-    const count = await this.constructor.countDocuments();
     const year = new Date().getFullYear();
-    this.applicationNumber = `PAT-${year}-${(count + 1).toString().padStart(5, '0')}`;
+
+    const counter = await Counter.findOneAndUpdate(
+      { name: `patent_${year}` },
+      { $inc: { seq: 1 } },
+      { returnDocument: "after", upsert: true }
+    );
+
+    this.applicationNumber =
+      `PAT-${year}-${counter.seq.toString().padStart(5, "0")}`;
   }
-  next();
 });
 
 module.exports = mongoose.model('Patent', patentSchema);

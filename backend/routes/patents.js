@@ -63,36 +63,36 @@ router.get('/stats/overview', async (req, res) => {
 // @access  Private
 router.get('/user/:clerkUserId/count', async (req, res) => {
   try {
-    const total = await Patent.countDocuments({ 
-      clerkUserId: req.params.clerkUserId 
+    const total = await Patent.countDocuments({
+      clerkUserId: req.params.clerkUserId
     });
 
-    const draft = await Patent.countDocuments({ 
+    const draft = await Patent.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'draft'
     });
-    
-    const submitted = await Patent.countDocuments({ 
+
+    const submitted = await Patent.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'submitted'
     });
-    
-    const underExamination = await Patent.countDocuments({ 
+
+    const underExamination = await Patent.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'under-examination'
     });
 
-    const granted = await Patent.countDocuments({ 
+    const granted = await Patent.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'granted'
     });
 
-    const published = await Patent.countDocuments({ 
+    const published = await Patent.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'published'
     });
 
-    const rejected = await Patent.countDocuments({ 
+    const rejected = await Patent.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'rejected'
     });
@@ -160,20 +160,20 @@ router.get('/user/:clerkUserId', async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    console.log(`[patent] Fetching patents for user: ${req.params.clerkUserId}`);
+   // console.log(`[patent] Fetching patents for user: ${req.params.clerkUserId}`);
 
-    const patents = await Patent.find({ 
-      clerkUserId: req.params.clerkUserId 
+    const patents = await Patent.find({
+      clerkUserId: req.params.clerkUserId
     })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Patent.countDocuments({ 
-      clerkUserId: req.params.clerkUserId 
+    const total = await Patent.countDocuments({
+      clerkUserId: req.params.clerkUserId
     });
 
-    console.log(`[patent] Found ${patents.length} patents for user ${req.params.clerkUserId}`);
+    //console.log(`[patent] Found ${patents.length} patents for user ${req.params.clerkUserId}`);
 
     res.json({
       success: true,
@@ -204,27 +204,27 @@ router.get('/user/:clerkUserId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const payload = req.body;
-    console.log('[patent] POST / - payload:', JSON.stringify(payload));
-    
+    //console.log('[patent] POST / - payload:', JSON.stringify(payload));
+
     // Basic validation
     if (!payload.inventionTitle) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invention title is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Invention title is required'
       });
     }
     if (!payload.clerkUserId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'User authentication required' 
+      return res.status(400).json({
+        success: false,
+        error: 'User authentication required'
       });
     }
 
     const patent = new Patent(payload);
     const savedPatent = await patent.save();
-    
-    console.log('[patent] created id:', savedPatent._id);
-    
+
+   // console.log('[patent] created id:', savedPatent._id);
+
     res.status(201).json({
       success: true,
       message: 'Patent application created successfully',
@@ -232,7 +232,7 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('[patent] POST / error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = {};
       Object.keys(error.errors).forEach(key => {
@@ -245,7 +245,7 @@ router.post('/', async (req, res) => {
         errors
       });
     }
-    
+
     res.status(400).json({
       success: false,
       error: 'Failed to create patent application',
@@ -337,7 +337,9 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const updates = req.body;
-    const allowedUpdates = ['status', 'currentStep', 'applicationNumber', 'filingDate'];
+
+    // FIX 1: Added 'currentStage' and 'status' to allowed updates
+    const allowedUpdates = ['status', 'currentStep', 'currentStage', 'applicationNumber', 'filingDate'];
 
     const filteredUpdates = {};
     allowedUpdates.forEach(field => {
@@ -346,6 +348,11 @@ router.put('/:id', async (req, res) => {
       }
     });
 
+    // FIX 2: Parse currentStage as Number directly in filteredUpdates (removed broken updateData ref)
+    if (filteredUpdates.currentStage !== undefined) {
+      filteredUpdates.currentStage = Number(filteredUpdates.currentStage);
+    }
+
     const patent = await Patent.findOneAndUpdate(
       {
         $or: [
@@ -353,7 +360,7 @@ router.put('/:id', async (req, res) => {
           { applicationNumber: req.params.id }
         ]
       },
-      filteredUpdates,
+      { $set: filteredUpdates },  // FIX 3: Use $set to avoid accidentally wiping other fields
       { new: true, runValidators: true }
     );
 
@@ -408,9 +415,9 @@ router.delete('/:id', async (req, res) => {
     }
 
     // 🔥 Admin override → skip user ownership check
-    if (isAdmin) {
-      console.log("🛑 Admin override: deleting patent without user ownership check");
-    }
+    // if (isAdmin) {
+    //   console.log("🛑 Admin override: deleting patent without user ownership check");
+    // }
 
     // Delete associated files
     const allFiles = [
@@ -422,10 +429,10 @@ router.delete('/:id', async (req, res) => {
       try {
         if (fs.existsSync(file.path)) {
           fs.unlinkSync(file.path);
-          console.log(`Deleted file: ${file.path}`);
+          //console.log(`Deleted file: ${file.path}`);
         }
       } catch (fileError) {
-        console.error(`Error deleting file ${file.path}:`, fileError);
+        //console.error(`Error deleting file ${file.path}:`, fileError);
       }
     });
 
@@ -448,8 +455,8 @@ router.delete('/:id', async (req, res) => {
 // Upload technical drawings
 router.post('/:id/technical-drawings', uploadUtils.upload.array('drawings', 10), async (req, res) => {
   try {
-    console.log(`[patent] POST /${req.params.id}/technical-drawings - files count:`, req.files && req.files.length);
-    
+    //console.log(`[patent] POST /${req.params.id}/technical-drawings - files count:`, req.files && req.files.length);
+
     const patent = await Patent.findById(req.params.id);
     if (!patent) {
       if (req.files && req.files.length > 0) {
@@ -475,7 +482,7 @@ router.post('/:id/technical-drawings', uploadUtils.upload.array('drawings', 10),
     patent.technicalDrawings.push(...drawings);
     await patent.save();
 
-    console.log('[patent] after drawings upload, id:', patent._id, 'drawingsCount:', (patent.technicalDrawings || []).length);
+    //console.log('[patent] after drawings upload, id:', patent._id, 'drawingsCount:', (patent.technicalDrawings || []).length);
 
     res.json({
       success: true,
@@ -502,10 +509,10 @@ router.get('/', async (req, res) => {
   try {
     // Get clerkUserId from query params or headers
     const { clerkUserId } = req.query;
-    
+
     const filter = clerkUserId ? { clerkUserId } : {};
     const patents = await Patent.find(filter).sort({ createdAt: -1 });
-    
+
     res.json({
       success: true,
       data: patents
@@ -522,8 +529,8 @@ router.get('/', async (req, res) => {
 // Upload supporting documents
 router.post('/:id/supporting-documents', uploadUtils.upload.array('documents', 10), async (req, res) => {
   try {
-    console.log(`[patent] POST /${req.params.id}/supporting-documents - files count:`, req.files && req.files.length);
-    
+   // console.log(`[patent] POST /${req.params.id}/supporting-documents - files count:`, req.files && req.files.length);
+
     const patent = await Patent.findById(req.params.id);
     if (!patent) {
       if (req.files && req.files.length > 0) {
@@ -549,7 +556,7 @@ router.post('/:id/supporting-documents', uploadUtils.upload.array('documents', 1
     patent.supportingDocuments.push(...documents);
     await patent.save();
 
-    console.log('[patent] after documents upload, id:', patent._id, 'documentsCount:', (patent.supportingDocuments || []).length);
+   // console.log('[patent] after documents upload, id:', patent._id, 'documentsCount:', (patent.supportingDocuments || []).length);
 
     res.json({
       success: true,
@@ -578,7 +585,7 @@ router.patch('/:id/completed-documents', async (req, res) => {
   try {
     const { documentIds } = req.body;
     const patent = await Patent.findById(req.params.id);
-    
+
     if (!patent) {
       return res.status(404).json({
         success: false,
@@ -608,9 +615,9 @@ router.patch('/:id/step', async (req, res) => {
   try {
     const { step } = req.body;
     if (typeof step !== 'number' || step < 1 || step > 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid step value' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid step value'
       });
     }
 
@@ -619,7 +626,7 @@ router.patch('/:id/step', async (req, res) => {
       { currentStep: step },
       { new: true }
     );
-    
+
     if (!patent) {
       return res.status(404).json({
         success: false,
@@ -684,32 +691,32 @@ router.get('/:id/certificate', async (req, res) => {
   try {
     const patent = await Patent.findById(req.params.id);
     if (!patent) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Patent application not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Patent application not found'
       });
     }
 
     if (!['granted', 'published', 'approved'].includes(patent.status)) {
-      return res.json({ 
-        success: false, 
-        message: 'Certificate not yet issued', 
-        status: patent.status, 
-        currentStep: patent.currentStep 
+      return res.json({
+        success: false,
+        message: 'Certificate not yet issued',
+        status: patent.status,
+        currentStep: patent.currentStep
       });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Certificate available', 
-      applicationNumber: patent.applicationNumber, 
-      grantedOn: patent.updatedAt 
+    res.json({
+      success: true,
+      message: 'Certificate available',
+      applicationNumber: patent.applicationNumber,
+      grantedOn: patent.updatedAt
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch certificate', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch certificate',
+      details: error.message
     });
   }
 });
