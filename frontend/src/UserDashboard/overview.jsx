@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from "@clerk/clerk-react";
 const backend_url = import.meta.env.VITE_BACKEND_URL;
-export default function DashboardOverview({ dashboardData }) {
+
+export default function DashboardOverview() {
   const { user, isLoaded } = useUser();
+  
+  // States for different data types
+  const [patents, setPatents] = useState([]);
+  const [copyrights, setCopyrights] = useState([]);
+  const [consultations, setConsultations] = useState([]);
+  
+  // Stats states
   const [consultationStats, setConsultationStats] = useState({
     total: 0,
     pending: 0,
@@ -10,12 +18,12 @@ export default function DashboardOverview({ dashboardData }) {
     completed: 0,
     cancelled: 0
   });
+  
   const [loading, setLoading] = useState(true);
-  const [recentConsultations, setRecentConsultations] = useState([]);
   const [error, setError] = useState(null);
 
-  // Fetch consultation stats and recent consultations
-  const fetchConsultationData = async () => {
+  // Fetch all data
+  const fetchAllData = async () => {
     if (!user || !user.id) {
       console.log('No user or user ID available');
       setLoading(false);
@@ -26,9 +34,9 @@ export default function DashboardOverview({ dashboardData }) {
     setError(null);
     
     try {
-      console.log('Fetching consultation data for user:', user.id);
+      console.log('Fetching all data for user:', user.id);
       
-      // Use the working endpoint to get all consultations
+      // Fetch consultations
       const consultationsResponse = await fetch(`${backend_url}/api/consultations/user/${user.id}?limit=100`);
       
       if (!consultationsResponse.ok) {
@@ -39,25 +47,17 @@ export default function DashboardOverview({ dashboardData }) {
       console.log('Consultations API Response:', consultationsResult);
       
       if (consultationsResult.success) {
-        const consultations = consultationsResult.data;
-        setRecentConsultations(consultations);
+        const consultationsData = consultationsResult.data;
+        setConsultations(consultationsData);
         
-        // Calculate counts manually from the consultations data
-        const total = consultationsResult.pagination?.total || consultations.length;
-        const pending = consultations.filter(c => c.status === 'pending').length;
-        const confirmed = consultations.filter(c => c.status === 'confirmed').length;
-        const completed = consultations.filter(c => c.status === 'completed').length;
-        const cancelled = consultations.filter(c => c.status === 'cancelled').length;
+        // Calculate consultation stats
+        const total = consultationsResult.pagination?.total || consultationsData.length;
+        const pending = consultationsData.filter(c => c.status === 'pending').length;
+        const confirmed = consultationsData.filter(c => c.status === 'confirmed').length;
+        const completed = consultationsData.filter(c => c.status === 'completed').length;
+        const cancelled = consultationsData.filter(c => c.status === 'cancelled').length;
         
         setConsultationStats({
-          total,
-          pending,
-          confirmed,
-          completed,
-          cancelled
-        });
-        
-        console.log('Calculated consultation stats:', {
           total,
           pending,
           confirmed,
@@ -67,8 +67,38 @@ export default function DashboardOverview({ dashboardData }) {
       } else {
         throw new Error(consultationsResult.message || 'Failed to fetch consultations');
       }
+
+      // Fetch patents
+      try {
+        console.log('Fetching patents for user:', user.id);
+        const patentsResponse = await fetch(`${backend_url}/api/patents/user/${user.id}`);
+        if (patentsResponse.ok) {
+          const patentsResult = await patentsResponse.json();
+          if (patentsResult.success) {
+            setPatents(patentsResult.data || []);
+          }
+        }
+      } catch (patentError) {
+        console.error('Error fetching patents:', patentError);
+        setPatents([]);
+      }
+
+      // Fetch copyrights
+      try {
+        const copyrightsResponse = await fetch(`${backend_url}/api/copyright/user/${user.id}`);
+        if (copyrightsResponse.ok) {
+          const copyrightsResult = await copyrightsResponse.json();
+          if (copyrightsResult.success) {
+            setCopyrights(copyrightsResult.data || []);
+          }
+        }
+      } catch (copyrightError) {
+        console.error('Error fetching copyrights:', copyrightError);
+        setCopyrights([]);
+      }
+
     } catch (error) {
-      console.error('Error fetching consultation data:', error);
+      console.error('Error fetching data:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -77,7 +107,7 @@ export default function DashboardOverview({ dashboardData }) {
 
   useEffect(() => {
     if (isLoaded && user) {
-      fetchConsultationData();
+      fetchAllData();
     }
   }, [isLoaded, user]);
 
@@ -120,6 +150,7 @@ export default function DashboardOverview({ dashboardData }) {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -143,13 +174,18 @@ export default function DashboardOverview({ dashboardData }) {
     return { applied, pending, completed };
   };
 
-  // Combine all activities including fetched consultations
+  // Combine all activities
   const allActivities = [
-    ...dashboardData.patents.map(p => ({ ...p, type: 'patent' })),
-    ...dashboardData.copyrights.map(c => ({ ...c, type: 'copyright' })),
-    ...recentConsultations.map(c => ({ ...c, type: 'consultation' }))
-  ].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
-   .slice(0, 5);
+    ...patents.map(p => ({ ...p, type: 'patent' })),
+    ...copyrights.map(c => ({ ...c, type: 'copyright' })),
+    ...consultations.map(c => ({ ...c, type: 'consultation' }))
+  ].sort((a, b) => {
+    const dateA = new Date(a.updatedAt || a.createdAt || 0);
+    const dateB = new Date(b.updatedAt || b.createdAt || 0);
+    return dateB - dateA;
+  }).slice(0, 10); // Show 10 recent activities
+
+  const totalApplications = patents.length + copyrights.length + consultationStats.total;
 
   if (loading) {
     return (
@@ -169,6 +205,22 @@ export default function DashboardOverview({ dashboardData }) {
             </div>
           ))}
         </div>
+        
+        {/* Recent Activity Skeleton */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+          <div className="h-6 bg-white/20 rounded w-1/4 mb-4 animate-pulse"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse flex items-center gap-4">
+                <div className="w-10 h-10 bg-white/20 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-white/20 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-white/20 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -177,10 +229,10 @@ export default function DashboardOverview({ dashboardData }) {
     return (
       <div className="space-y-6">
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
-          <h3 className="text-red-400 font-bold mb-2">Error Loading Consultation Data</h3>
+          <h3 className="text-red-400 font-bold mb-2">Error Loading Data</h3>
           <p className="text-red-300">{error}</p>
           <button 
-            onClick={fetchConsultationData}
+            onClick={fetchAllData}
             className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
           >
             Retry
@@ -192,32 +244,25 @@ export default function DashboardOverview({ dashboardData }) {
 
   return (
     <div className="space-y-6">
-      {/* Debug Info - Remove this after testing */}
-      {/* <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4">
-        <h4 className="text-blue-400 font-bold text-sm">Debug Info:</h4>
-        <p className="text-blue-300 text-xs">Consultations Found: {consultationStats.total}</p>
-        <p className="text-blue-300 text-xs">Recent Consultations: {recentConsultations.length}</p>
-      </div> */}
-
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-sm">Total Patents</p>
-              <p className="text-3xl font-bold text-white">{dashboardData.patents.length}</p>
+              <p className="text-3xl font-bold text-white">{patents.length}</p>
             </div>
             <div className="text-4xl">🔬</div>
           </div>
           <div className="mt-4 flex gap-4 text-xs">
             <span className="text-blue-400">
-              {getCategoryStats(dashboardData.patents).applied} applied
+              {getCategoryStats(patents).applied} applied
             </span>
             <span className="text-yellow-400">
-              {getCategoryStats(dashboardData.patents).pending} pending
+              {getCategoryStats(patents).pending} pending
             </span>
             <span className="text-green-400">
-              {getCategoryStats(dashboardData.patents).completed} completed
+              {getCategoryStats(patents).completed} completed
             </span>
           </div>
         </div>
@@ -226,19 +271,19 @@ export default function DashboardOverview({ dashboardData }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-sm">Total Copyrights</p>
-              <p className="text-3xl font-bold text-white">{dashboardData.copyrights.length}</p>
+              <p className="text-3xl font-bold text-white">{copyrights.length}</p>
             </div>
             <div className="text-4xl">©️</div>
           </div>
           <div className="mt-4 flex gap-4 text-xs">
             <span className="text-blue-400">
-              {getCategoryStats(dashboardData.copyrights).applied} applied
+              {getCategoryStats(copyrights).applied} applied
             </span>
             <span className="text-yellow-400">
-              {getCategoryStats(dashboardData.copyrights).pending} pending
+              {getCategoryStats(copyrights).pending} pending
             </span>
             <span className="text-green-400">
-              {getCategoryStats(dashboardData.copyrights).completed} completed
+              {getCategoryStats(copyrights).completed} completed
             </span>
           </div>
         </div>
@@ -255,12 +300,17 @@ export default function DashboardOverview({ dashboardData }) {
             <span className="text-yellow-400">
               {consultationStats.pending} pending
             </span>
-            <span className="text-blue-400">
+            <span className="text-emerald-400">
               {consultationStats.confirmed} confirmed
             </span>
             <span className="text-green-400">
               {consultationStats.completed} completed
             </span>
+            {consultationStats.cancelled > 0 && (
+              <span className="text-red-400">
+                {consultationStats.cancelled} cancelled
+              </span>
+            )}
           </div>
         </div>
 
@@ -268,14 +318,14 @@ export default function DashboardOverview({ dashboardData }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-sm">Total Applications</p>
-              <p className="text-3xl font-bold text-white">
-                {dashboardData.patents.length + dashboardData.copyrights.length + consultationStats.total}
-              </p>
+              <p className="text-3xl font-bold text-white">{totalApplications}</p>
             </div>
             <div className="text-4xl">📊</div>
           </div>
           <div className="mt-4">
-            <span className="text-purple-400 text-sm">All IP applications & consultations</span>
+            <span className="text-purple-400 text-sm">
+              {patents.length} patents • {copyrights.length} copyrights • {consultationStats.total} consultations
+            </span>
           </div>
         </div>
       </div>
@@ -289,32 +339,99 @@ export default function DashboardOverview({ dashboardData }) {
               No recent activity found
             </div>
           ) : (
-            allActivities.map((item, index) => (
-              <div key={index} className="flex items-center justify-between bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="text-2xl">
-                    {item.type === 'patent' ? '🔬' : item.type === 'copyright' ? '©️' : '💬'}
+            allActivities.map((item, index) => {
+              // Get appropriate title based on item type
+              let title = '';
+              if (item.type === 'patent') {
+                title = item.inventionTitle || 'Patent Application';
+              } else if (item.type === 'copyright') {
+                title = item.title || 'Copyright Application';
+              } else {
+                title = `${item.consultationType || 'Consultation'} ${item.workType ? `- ${item.workType}` : ''}`;
+              }
+
+              return (
+                <div key={index} className="flex items-center justify-between bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="text-2xl">
+                      {item.type === 'patent' ? '🔬' : item.type === 'copyright' ? '©️' : '💬'}
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{title}</p>
+                      <p className="text-slate-400 text-sm">
+                        {formatDate(item.updatedAt || item.createdAt)} • 
+                        <span className="capitalize ml-1">
+                          {item.type}
+                          {item.applicationNumber && ` • ${item.applicationNumber}`}
+                          {item.consultationId && ` • ${item.consultationId}`}
+                        </span>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-white font-medium">
-                      {item.inventionTitle || item.title || `${item.consultationType} Consultation - ${item.workType}`}
-                    </p>
-                    <p className="text-slate-400 text-sm">
-                      {formatDate(item.updatedAt || item.createdAt)} • 
-                      <span className="capitalize ml-1">
-                        {item.type}
-                        {item.consultationId && ` • ${item.consultationId}`}
-                        {item.applicationNumber && ` • ${item.applicationNumber}`}
-                      </span>
-                    </p>
-                  </div>
+                  <span className={`px-3 py-1 text-xs rounded-full border capitalize ${getStatusColor(item.status)}`}>
+                    {getStatusIcon(item.status)} {item.status}
+                  </span>
                 </div>
-                <span className={`px-3 py-1 text-xs rounded-full border capitalize ${getStatusColor(item.status)}`}>
-                  {getStatusIcon(item.status)} {item.status}
-                </span>
-              </div>
-            ))
+              );
+            })
           )}
+        </div>
+      </div>
+
+      {/* Optional: Quick Stats Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4">
+          <h4 className="text-slate-400 text-sm mb-2">Patent Status</h4>
+          <div className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-blue-400">Applied</span>
+              <span className="text-white">{getCategoryStats(patents).applied}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-yellow-400">Pending</span>
+              <span className="text-white">{getCategoryStats(patents).pending}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-green-400">Completed</span>
+              <span className="text-white">{getCategoryStats(patents).completed}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4">
+          <h4 className="text-slate-400 text-sm mb-2">Copyright Status</h4>
+          <div className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-blue-400">Applied</span>
+              <span className="text-white">{getCategoryStats(copyrights).applied}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-yellow-400">Pending</span>
+              <span className="text-white">{getCategoryStats(copyrights).pending}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-green-400">Completed</span>
+              <span className="text-white">{getCategoryStats(copyrights).completed}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4">
+          <h4 className="text-slate-400 text-sm mb-2">Consultation Status</h4>
+          <div className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-yellow-400">Pending</span>
+              <span className="text-white">{consultationStats.pending}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-emerald-400">Confirmed</span>
+              <span className="text-white">{consultationStats.confirmed}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-green-400">Completed</span>
+              <span className="text-white">{consultationStats.completed}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

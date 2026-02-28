@@ -34,15 +34,15 @@ export default function UserDashboard() {
     
     try {
       // Fetch user's patents with detailed status information
-      const patentsResponse = await fetch(`${backend_url}/api/user/${user.id}/patents`);
+      const patentsResponse = await fetch(`${backend_url}/api/patents/user/${user.id}`);
       const patentsResult = await patentsResponse.json();
       
       // Fetch user's copyrights with detailed status information
-      const copyrightsResponse = await fetch(`${backend_url}/api/user/${user.id}/copyright`);
+      const copyrightsResponse = await fetch(`${backend_url}/api/copyright/user/${user.id}`);
       const copyrightsResult = await copyrightsResponse.json();
       
       // Fetch user's consultations with detailed status information
-      const consultationsResponse = await fetch(`${backend_url}/api/user/${user.id}/consulation`);
+      const consultationsResponse = await fetch(`${backend_url}/api/consultations/user/${user.id}`);
       const consultationsResult = await consultationsResponse.json();
       
       setDashboardData({
