@@ -60,31 +60,31 @@ router.get('/stats/overview', async (req, res) => {
 // @access  Private
 router.get('/user/:clerkUserId/count', async (req, res) => {
   try {
-    const total = await Copyright.countDocuments({ 
-      clerkUserId: req.params.clerkUserId 
+    const total = await Copyright.countDocuments({
+      clerkUserId: req.params.clerkUserId
     });
 
-    const draft = await Copyright.countDocuments({ 
+    const draft = await Copyright.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'draft'
     });
-    
-    const submitted = await Copyright.countDocuments({ 
+
+    const submitted = await Copyright.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'submitted'
     });
-    
-    const underReview = await Copyright.countDocuments({ 
+
+    const underReview = await Copyright.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'under-review'
     });
 
-    const registered = await Copyright.countDocuments({ 
+    const registered = await Copyright.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'registered'
     });
 
-    const rejected = await Copyright.countDocuments({ 
+    const rejected = await Copyright.countDocuments({
       clerkUserId: req.params.clerkUserId,
       status: 'rejected'
     });
@@ -153,15 +153,15 @@ router.get('/user/:clerkUserId', async (req, res) => {
 
     //console.log(`[copyright] Fetching copyrights for user: ${req.params.clerkUserId}`);
 
-    const copyrights = await Copyright.find({ 
-      clerkUserId: req.params.clerkUserId 
+    const copyrights = await Copyright.find({
+      clerkUserId: req.params.clerkUserId
     })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Copyright.countDocuments({ 
-      clerkUserId: req.params.clerkUserId 
+    const total = await Copyright.countDocuments({
+      clerkUserId: req.params.clerkUserId
     });
 
     //console.log(`[copyright] Found ${copyrights.length} copyrights for user ${req.params.clerkUserId}`);
@@ -195,35 +195,35 @@ router.get('/user/:clerkUserId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const payload = req.body;
-   // console.log('[copyright] POST / - payload:', JSON.stringify(payload));
-    
+    // console.log('[copyright] POST / - payload:', JSON.stringify(payload));
+
     if (!payload.title) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Title is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Title is required'
       });
     }
     if (!payload.clerkUserId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'User authentication required' 
+      return res.status(400).json({
+        success: false,
+        error: 'User authentication required'
       });
     }
 
     const copyright = new Copyright(payload);
     const saved = await copyright.save();
-    
+
     //console.log('[copyright] created id:', saved._id);
-    
-    res.status(201).json({ 
-      success: true, 
-      message: 'Copyright application created successfully', 
-      data: saved 
+
+    res.status(201).json({
+      success: true,
+      message: 'Copyright application created successfully',
+      data: saved
     });
-    
+
   } catch (error) {
     console.error('[copyright] POST / error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = {};
       Object.keys(error.errors).forEach(key => {
@@ -237,10 +237,10 @@ router.post('/', async (req, res) => {
       });
     }
 
-    res.status(400).json({ 
-      success: false, 
-      error: 'Failed to create copyright application', 
-      details: error.message 
+    res.status(400).json({
+      success: false,
+      error: 'Failed to create copyright application',
+      details: error.message
     });
   }
 });
@@ -416,7 +416,7 @@ router.delete('/:id', async (req, res) => {
         try {
           if (fs.existsSync(file.path)) {
             fs.unlinkSync(file.path);
-           // console.log(`Deleted file: ${file.path}`);
+            // console.log(`Deleted file: ${file.path}`);
           }
         } catch (error) {
           console.error(`Failed to delete file ${file.path}:`, error);
@@ -451,20 +451,20 @@ router.post('/:id/primary-file', uploadUtils.upload.single('primary'), async (re
     //   mimetype: req.file.mimetype,
     //   path: req.file.path
     // });
-    
+
     const copyright = await Copyright.findById(req.params.id);
     if (!copyright) {
       if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Copyright application not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Copyright application not found'
       });
     }
 
     const fileMeta = {
       filename: req.file.filename,
       originalName: req.file.originalname,
-      path: req.file.path,
+      path: result.secure_url,
       size: req.file.size,
       mimetype: req.file.mimetype,
       uploadDate: new Date()
@@ -472,21 +472,21 @@ router.post('/:id/primary-file', uploadUtils.upload.single('primary'), async (re
 
     copyright.files = [fileMeta, ...copyright.files];
     await copyright.save();
-    
+
     //console.log('[copyright] after primary upload, id:', copyright._id, 'filesCount:', (copyright.files || []).length);
 
-    res.json({ 
-      success: true, 
-      message: 'Primary file uploaded successfully', 
-      data: fileMeta 
+    res.json({
+      success: true,
+      message: 'Primary file uploaded successfully',
+      data: fileMeta
     });
   } catch (error) {
     console.error(`[copyright] POST /${req.params.id}/primary-file error:`, error);
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to upload primary file', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload primary file',
+      details: error.message
     });
   }
 });
@@ -495,24 +495,24 @@ router.post('/:id/primary-file', uploadUtils.upload.single('primary'), async (re
 router.post('/:id/supporting-documents', uploadUtils.upload.array('documents', 10), async (req, res) => {
   try {
     //console.log(`[copyright] POST /${req.params.id}/supporting-documents - files count:`, req.files && req.files.length);
-    
+
     const copyright = await Copyright.findById(req.params.id);
     if (!copyright) {
       if (req.files && req.files.length > 0) {
-        req.files.forEach(f => { 
-          if (fs.existsSync(f.path)) fs.unlinkSync(f.path); 
+        req.files.forEach(f => {
+          if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
         });
       }
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Copyright application not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Copyright application not found'
       });
     }
 
     const docs = req.files.map(f => ({
       filename: f.filename,
       originalName: f.originalname,
-      path: f.path,
+      path: result.secure_url,
       size: f.size,
       mimetype: f.mimetype,
       uploadDate: new Date()
@@ -520,25 +520,25 @@ router.post('/:id/supporting-documents', uploadUtils.upload.array('documents', 1
 
     copyright.files.push(...docs);
     await copyright.save();
-    
+
     //console.log('[copyright] after supporting upload, id:', copyright._id, 'filesCount:', (copyright.files || []).length);
 
-    res.json({ 
-      success: true, 
-      message: 'Supporting documents uploaded successfully', 
-      data: docs 
+    res.json({
+      success: true,
+      message: 'Supporting documents uploaded successfully',
+      data: docs
     });
   } catch (error) {
     console.error(`[copyright] POST /${req.params.id}/supporting-documents error:`, error);
     if (req.files && req.files.length > 0) {
-      req.files.forEach(f => { 
-        if (fs.existsSync(f.path)) fs.unlinkSync(f.path); 
+      req.files.forEach(f => {
+        if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
       });
     }
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to upload supporting documents', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload supporting documents',
+      details: error.message
     });
   }
 });
@@ -550,35 +550,35 @@ router.patch('/:id/step', async (req, res) => {
   try {
     const { step } = req.body;
     if (typeof step !== 'number' || step < 1 || step > 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid step value' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid step value'
       });
     }
 
     const updated = await Copyright.findByIdAndUpdate(
-      req.params.id, 
-      { currentStep: step }, 
+      req.params.id,
+      { currentStep: step },
       { new: true }
     );
-    
+
     if (!updated) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Copyright application not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Copyright application not found'
       });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Step updated successfully', 
-      data: updated 
+    res.json({
+      success: true,
+      message: 'Step updated successfully',
+      data: updated
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update step', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update step',
+      details: error.message
     });
   }
 });
@@ -588,11 +588,11 @@ router.post('/:id/payment', async (req, res) => {
   try {
     const { amount, method, transactionId } = req.body || {};
     const copyright = await Copyright.findById(req.params.id);
-    
+
     if (!copyright) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Copyright application not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Copyright application not found'
       });
     }
 
@@ -604,19 +604,19 @@ router.post('/:id/payment', async (req, res) => {
     };
     copyright.status = 'submitted';
     copyright.currentStep = Math.max(copyright.currentStep || 1, 4);
-    
+
     await copyright.save();
 
-    res.json({ 
-      success: true, 
-      message: 'Payment recorded and application submitted successfully', 
-      data: copyright 
+    res.json({
+      success: true,
+      message: 'Payment recorded and application submitted successfully',
+      data: copyright
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Payment recording failed', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Payment recording failed',
+      details: error.message
     });
   }
 });
@@ -626,33 +626,33 @@ router.get('/:id/download/:fileId', async (req, res) => {
   try {
     const copyright = await Copyright.findById(req.params.id);
     if (!copyright) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Copyright application not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Copyright application not found'
       });
     }
 
     const file = (copyright.files || []).find(f => f._id && f._id.toString() === req.params.fileId);
     if (!file) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'File not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'File not found'
       });
     }
 
     if (!fs.existsSync(file.path)) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'File missing on server' 
+      return res.status(404).json({
+        success: false,
+        message: 'File missing on server'
       });
     }
 
     res.download(file.path, file.originalName || file.filename);
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to download file', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to download file',
+      details: error.message
     });
   }
 });
@@ -662,32 +662,32 @@ router.get('/:id/certificate', async (req, res) => {
   try {
     const copyright = await Copyright.findById(req.params.id);
     if (!copyright) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Copyright application not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Copyright application not found'
       });
     }
 
     if (copyright.status !== 'registered') {
-      return res.json({ 
-        success: false, 
-        message: 'Certificate not yet issued', 
-        status: copyright.status, 
-        currentStep: copyright.currentStep 
+      return res.json({
+        success: false,
+        message: 'Certificate not yet issued',
+        status: copyright.status,
+        currentStep: copyright.currentStep
       });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Certificate available', 
-      applicationNumber: copyright.applicationNumber, 
-      registeredOn: copyright.updatedAt 
+    res.json({
+      success: true,
+      message: 'Certificate available',
+      applicationNumber: copyright.applicationNumber,
+      registeredOn: copyright.updatedAt
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch certificate', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch certificate',
+      details: error.message
     });
   }
 });

@@ -2,16 +2,40 @@ const mongoose = require('mongoose');
 const Counter = require("../models/counterModel");
 
 const documentSchema = new mongoose.Schema({
-  filename: String,
-  originalName: String,
-  path: String,
-  size: Number,
-  mimetype: String,
+  originalName: {
+    type: String
+  },
+
+  cloudinaryUrl: {
+    type: String,
+    required: true
+  },
+
+  publicId: {
+    type: String,
+    required: true
+  },
+
+  resourceType: {
+    type: String,
+    enum: ["image", "raw"],
+    default: "raw"
+  },
+
+  size: {
+    type: Number
+  },
+
+  mimetype: {
+    type: String
+  },
+
   uploadDate: {
     type: Date,
     default: Date.now
   }
 });
+
 
 const patentSchema = new mongoose.Schema({
   clerkUserId: {
