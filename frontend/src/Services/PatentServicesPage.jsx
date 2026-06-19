@@ -55,7 +55,11 @@ const PatentServicesPage = () => {
               </div>
             </div>
             <div className="bg-gray-200 rounded-2xl aspect-video flex items-center justify-center">
-              <div className="text-gray-400 text-6xl">📋</div>
+              <img
+                  src="patent.png"
+                  alt="Patent Services"
+                  className="w-full h-full object-cover"
+                />
             </div>
           </div>
         </div>
@@ -137,65 +141,6 @@ const PatentServicesPage = () => {
           </div>
         </div>
       </section>
-
-      {/* Contact Form */}
-      <section className="py-20 bg-slate-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-gray-300 text-lg">
-              Contact us today for expert patent services assistance
-            </p>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <div className="block text-sm font-medium mb-2">Full Name *</div>
-                <input
-                  type="text"
-                  placeholder="Your full name"
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                />
-              </div>
-              <div>
-                <div className="block text-sm font-medium mb-2">Email Address *</div>
-                <input
-                  type="email"
-                  placeholder="you@email.com"
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <div className="block text-sm font-medium mb-2">Phone Number</div>
-              <input
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-              />
-            </div>
-            
-            <div>
-              <div className="block text-sm font-medium mb-2">Tell us about your patent service needs *</div>
-              <textarea
-                rows={4}
-                placeholder="Describe your patent service requirements..."
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-              />
-            </div>
-            
-            <button
-              className="w-full bg-emerald-500 hover:bg-emerald-600 py-3 rounded-lg font-medium transition-colors"
-            >
-              Send Message
-            </button>
-          </div>
-        </div>
-      </section>
-
-      
     </div>
   );
 };

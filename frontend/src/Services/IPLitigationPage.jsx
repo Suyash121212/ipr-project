@@ -70,9 +70,11 @@ const IPLitigationPage = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="bg-slate-200 rounded-2xl aspect-video flex items-center justify-center">
-              <div className="w-16 h-16 bg-slate-400 rounded-full flex items-center justify-center">
-                <div className="w-0 h-0 border-l-6 border-r-0 border-t-4 border-b-4 border-l-white border-t-transparent border-b-transparent ml-1"></div>
-              </div>
+              <img
+                  src="iplitigation.png"
+                  alt="IP Litigation Services"
+                  className="w-full h-full object-cover"
+                />
             </div>
             <div>
               <h2 className="text-3xl font-bold mb-6">Why it matters</h2>
@@ -181,78 +183,6 @@ const IPLitigationPage = () => {
           </div>
         </div>
       </section>
-
-      {/* Contact Form Section */}
-      <section className="py-20 bg-slate-800/30">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-slate-300 text-lg">
-              Contact us today for expert IP litigation services assistance
-            </p>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Full Name *</label>
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleInputChange}
-                placeholder="Your full name"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Email Address *</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="your@email.com"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Phone Number</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="+1 (555) 123-4567"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Tell us about your IP litigation service needs *</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Describe your IP litigation requirements..."
-                rows={4}
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-                required
-              />
-            </div>
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="w-full bg-emerald-500 text-white py-4 rounded-lg font-semibold hover:bg-emerald-600 transition-colors"
-              >
-                Send Message
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      
     </div>
   );
 };

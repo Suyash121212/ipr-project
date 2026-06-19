@@ -71,17 +71,17 @@ export default function Footer() {
               <div className="flex items-start space-x-3">
                 <MapPin className="h-4 w-4 text-teal-400 mt-0.5 flex-shrink-0" />
                 <span className="text-gray-400">
-                  123 Main Street, Suite 400<br />
-                  <br /> Pune - 411001, Maharashtra, India
+                  305, Pentagon Towers 2, MagarpattaCity, <br />
+                  <br /> Hadapsar, Pune-411013., Maharashtra, India
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4 text-teal-400 flex-shrink-0" />
-                <span className="text-gray-400">+91 9878453838</span>
+                <span className="text-gray-400">+91 9404060046</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4 text-teal-400 flex-shrink-0" />
-                <span className="text-gray-400">info@ipsecurelegal.com</span>
+                <span className="text-gray-400">admin@vtfi.in</span>
               </div>
             </div>
           </div>
