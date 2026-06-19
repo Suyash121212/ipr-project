@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from "@clerk/clerk-react";
-import { Download, FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X } from 'lucide-react';
+import { Download, FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X, Eye } from 'lucide-react';
 const backend_url = import.meta.env.VITE_BACKEND_URL;
 
 const COPYRIGHT_STAGES = [
@@ -95,29 +95,29 @@ export default function DashboardCopyright() {
     }
     switch (copyright?.status) {
       case 'draft':
-      case 'submitted':          return 1;
-      case 'under-review':       return 2;
-      case 'under-examination':  return 3;
-      case 'objection':          return 4;
-      case 'registered':         return 5;
+      case 'submitted': return 1;
+      case 'under-review': return 2;
+      case 'under-examination': return 3;
+      case 'objection': return 4;
+      case 'registered': return 5;
       case 'certificate-issued': return 6;
       case 'rejected':
-      case 'cancelled':          return 0;
-      default:                   return 1;
+      case 'cancelled': return 0;
+      default: return 1;
     }
   };
 
   const getStatusBadge = (status) => {
     const map = {
-      draft:               { color: 'bg-gray-500/20 text-gray-300 border-gray-500/30',          label: '📝 Draft' },
-      submitted:           { color: 'bg-blue-500/20 text-blue-300 border-blue-500/30',          label: '📤 Submitted' },
-      'under-review':      { color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',    label: '👀 Under Review' },
-      'under-examination': { color: 'bg-purple-500/20 text-purple-300 border-purple-500/30',    label: '🔍 Under Examination' },
-      objection:           { color: 'bg-orange-500/20 text-orange-300 border-orange-500/30',    label: '⚠️ Objection' },
-      registered:          { color: 'bg-green-500/20 text-green-300 border-green-500/30',       label: '✅ Registered' },
-      'certificate-issued':{ color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', label: '🏆 Certificate Issued' },
-      rejected:            { color: 'bg-red-500/20 text-red-300 border-red-500/30',             label: '❌ Rejected' },
-      cancelled:           { color: 'bg-red-500/20 text-red-300 border-red-500/30',             label: '❌ Cancelled' },
+      draft: { color: 'bg-gray-500/20 text-gray-300 border-gray-500/30', label: '📝 Draft' },
+      submitted: { color: 'bg-blue-500/20 text-blue-300 border-blue-500/30', label: '📤 Submitted' },
+      'under-review': { color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', label: '👀 Under Review' },
+      'under-examination': { color: 'bg-purple-500/20 text-purple-300 border-purple-500/30', label: '🔍 Under Examination' },
+      objection: { color: 'bg-orange-500/20 text-orange-300 border-orange-500/30', label: '⚠️ Objection' },
+      registered: { color: 'bg-green-500/20 text-green-300 border-green-500/30', label: '✅ Registered' },
+      'certificate-issued': { color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', label: '🏆 Certificate Issued' },
+      rejected: { color: 'bg-red-500/20 text-red-300 border-red-500/30', label: '❌ Rejected' },
+      cancelled: { color: 'bg-red-500/20 text-red-300 border-red-500/30', label: '❌ Cancelled' },
     };
     return map[status] || { color: 'bg-gray-500/20 text-gray-300 border-gray-500/30', label: '📄 Pending' };
   };
@@ -148,6 +148,47 @@ export default function DashboardCopyright() {
         if (selectedCopyright?._id === copyrightId) closeModal();
       } else alert(data.message || 'Failed to delete');
     } catch { alert('Error deleting copyright application'); }
+  };
+
+  const handleDownload = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+
+  const handleView = (file) => {
+    const extension =
+      file.originalName?.split(".").pop()?.toLowerCase();
+
+    const fileUrl = file.cloudinaryUrl;
+
+    if (extension === "pdf") {
+      window.open(fileUrl, "_blank");
+    } else if (["doc", "docx"].includes(extension)) {
+      window.open(
+        `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
+          fileUrl
+        )}`,
+        "_blank"
+      );
+    } else {
+      window.open(fileUrl, "_blank");
+    }
   };
 
   // ── Loading ──
@@ -242,8 +283,8 @@ export default function DashboardCopyright() {
                                     ${done
                                       ? `${color.bg} text-white`
                                       : active
-                                      ? `${color.bg} text-white ring-2 ${color.ring} ring-offset-1 ring-offset-slate-900`
-                                      : 'bg-slate-700 text-slate-500'
+                                        ? `${color.bg} text-white ring-2 ${color.ring} ring-offset-1 ring-offset-slate-900`
+                                        : 'bg-slate-700 text-slate-500'
                                     }`}>
                                     {done ? '✓' : stage.id}
                                   </div>
@@ -334,72 +375,65 @@ export default function DashboardCopyright() {
                 </div>
               )}
 
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5 space-y-3">
-                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Work Information</h4>
+              {/* ── Author + Primary Applicant ── */}
+              <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5">
+                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Author & Primary Applicant</h4>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-slate-500">Work Title</p>
-                    <p className="text-white font-semibold text-sm">{selectedCopyright.title}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">Author</p>
-                      <p className="text-white text-sm">{selectedCopyright.authorName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Applicant</p>
-                      <p className="text-white text-sm">{selectedCopyright.applicantName || '—'}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">Work Type</p>
-                      <p className="text-white text-sm capitalize">{selectedCopyright.workType || 'Not specified'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Language</p>
-                      <p className="text-white text-sm">{selectedCopyright.language || 'Not specified'}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">Published</p>
-                      <p className="text-sm">
-                        {selectedCopyright.isPublished
-                          ? <span className="text-green-400">✅ Yes</span>
-                          : <span className="text-slate-400">❌ No</span>}
-                      </p>
-                    </div>
-                    {selectedCopyright.publicationDate && (
-                      <div>
-                        <p className="text-xs text-slate-500">Publication Date</p>
-                        <p className="text-white text-sm">{formatDate(selectedCopyright.publicationDate)}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5 space-y-3">
-                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Application Details</h4>
-                  <div>
-                    <p className="text-xs text-slate-500">Application Number</p>
-                    <p className="text-white font-mono text-sm">{selectedCopyright.applicationNumber || 'Pending Assignment'}</p>
+                    <p className="text-xs text-slate-500">Author</p>
+                    <p className="text-white text-sm">{selectedCopyright.authorName || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Filing Date</p>
-                    <p className="text-white text-sm">{formatDate(selectedCopyright.filingDate || selectedCopyright.createdAt)}</p>
+                    <p className="text-xs text-slate-500">Applicant Name</p>
+                    <p className="text-white text-sm">{selectedCopyright.applicantName || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Submitted On</p>
-                    <p className="text-white text-sm">{formatDate(selectedCopyright.createdAt)}</p>
+                    <p className="text-xs text-slate-500">Email</p>
+                    <p className="text-white text-sm break-all">{selectedCopyright.applicantEmail || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Last Updated</p>
-                    <p className="text-white text-sm">{formatDate(selectedCopyright.updatedAt)}</p>
+                    <p className="text-xs text-slate-500">Phone</p>
+                    <p className="text-white text-sm">{selectedCopyright.applicantPhone || '—'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-slate-500">Address</p>
+                    <p className="text-white text-sm">{selectedCopyright.applicantAddress || '—'}</p>
                   </div>
                 </div>
               </div>
+
+              {/* ── Additional Applicants ── */}
+              {selectedCopyright.additionalApplicants?.length > 0 && (
+                <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5">
+                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                    Additional Applicants ({selectedCopyright.additionalApplicants.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedCopyright.additionalApplicants.map((applicant, index) => (
+                      <div key={applicant._id || index} className="bg-slate-700/40 rounded-lg p-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <p className="text-xs text-slate-500">Name</p>
+                            <p className="text-white text-sm">{applicant.name || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Email</p>
+                            <p className="text-white text-sm break-all">{applicant.email || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Phone</p>
+                            <p className="text-white text-sm">{applicant.phone || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Address</p>
+                            <p className="text-white text-sm">{applicant.address || '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Description */}
               {selectedCopyright.description && (
@@ -427,10 +461,28 @@ export default function DashboardCopyright() {
                             <p className="text-slate-500 text-xs">{(file.size / 1024 / 1024).toFixed(2)} MB • {file.mimetype}</p>
                           </div>
                         </div>
-                        <a href={`${backend_url}/${file.path}`} target="_blank" rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 p-1.5 rounded transition-colors flex-shrink-0">
-                          <Download className="w-3.5 h-3.5" />
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleView(file)}
+                            className="text-green-400 hover:text-green-300"
+                            title="View"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              handleDownload(
+                                file.cloudinaryUrl,
+                                file.originalName
+                              )
+                            }
+                            className="text-blue-400 hover:text-blue-300"
+                            title="Download"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -473,24 +525,22 @@ export default function DashboardCopyright() {
                         const { color } = stage;
 
                         return (
-                          <div key={stage.id} className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
-                            isCurrent   ? color.light :
+                          <div key={stage.id} className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${isCurrent ? color.light :
                             isCompleted ? 'bg-slate-700/30 border-slate-600/30' :
-                            'bg-slate-800/30 border-slate-700/20 opacity-50'
-                          }`}>
+                              'bg-slate-800/30 border-slate-700/20 opacity-50'
+                            }`}>
                             {/* Circle */}
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
-                              isCompleted
-                                ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
-                                : isCurrent
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${isCompleted
+                              ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
+                              : isCurrent
                                 ? `${color.bg} text-white shadow-md ring-2 ${color.ring} ring-offset-2 ring-offset-slate-900`
                                 : 'bg-slate-700 text-slate-500'
-                            }`}>
+                              }`}>
                               {isCompleted
                                 ? <CheckCircle className="w-5 h-5" />
                                 : isCurrent
-                                ? <Clock className="w-5 h-5" />
-                                : <span>{stage.id}</span>
+                                  ? <Clock className="w-5 h-5" />
+                                  : <span>{stage.id}</span>
                               }
                             </div>
 
@@ -511,9 +561,8 @@ export default function DashboardCopyright() {
                                   </span>
                                 )}
                               </div>
-                              <p className={`text-xs leading-relaxed ${
-                                isCurrent ? 'text-slate-300' : isCompleted ? 'text-slate-400' : 'text-slate-600'
-                              }`}>
+                              <p className={`text-xs leading-relaxed ${isCurrent ? 'text-slate-300' : isCompleted ? 'text-slate-400' : 'text-slate-600'
+                                }`}>
                                 {stage.description}
                               </p>
                             </div>

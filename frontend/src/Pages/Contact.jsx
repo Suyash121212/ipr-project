@@ -17,7 +17,7 @@ function Contact() {
   const [submitCount, setSubmitCount] = useState(0)
 
   // Get API URL from environment or use default
-  const API_URL = import.meta.env.VITE_API_URL || `${backend_url}/api`
+  const API_URL = import.meta.env.VITE_BACKEND_URL || `${backend_url}/api`
 
   // Form validation function
   const validateForm = () => {
@@ -240,7 +240,7 @@ function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-white mb-1">Main Office</h3>
-                  <p className="text-gray-300">VIIT - Computer Science Department</p>
+                  <p className="text-gray-300">Pentagon Towers 2, MagarpattaCity,</p>
                   <p className="text-gray-300">Pune, Maharashtra</p>
                   <p className="text-gray-300">India</p>
                 </div>
@@ -253,8 +253,7 @@ function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-white mb-1">Phone</h3>
-                  <p className="text-gray-300">Main: +91 (20) 123-4567</p>
-                  <p className="text-gray-300">Mobile: +91 98765-43210</p>
+                  <p className="text-gray-300">Mobile: +91 94040-60046</p>
                 </div>
               </div>
 
@@ -265,8 +264,7 @@ function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-white mb-1">Email</h3>
-                  <p className="text-gray-300">General: info@ipsecurelegal.com</p>
-                  <p className="text-gray-300">New Clients: newclient@ipsecurelegal.com</p>
+                  <p className="text-gray-300">General: admin@vtfi.in</p>
                 </div>
               </div>
 
@@ -277,22 +275,7 @@ function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-white mb-1">Business Hours</h3>
-                  <p className="text-gray-300">Monday - Friday: 9:00 AM - 6:00 PM IST</p>
-                  <p className="text-gray-300">Saturday: 10:00 AM - 2:00 PM IST</p>
-                  <p className="text-gray-300">Sunday: Closed</p>
-                </div>
-              </div>
-
-              {/* International Offices */}
-              <div className="flex items-start space-x-4">
-                <div className="bg-teal-600 p-3 rounded-lg flex-shrink-0">
-                  <Globe className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-1">International Offices</h3>
-                  <p className="text-gray-300">London, UK</p>
-                  <p className="text-gray-300">Tokyo, Japan</p>
-                  <p className="text-gray-300">Toronto, Canada</p>
+                  <p className="text-gray-300">10:00 AM - 5:00 PM IST</p>
                 </div>
               </div>
             </div>
@@ -513,20 +496,20 @@ function Contact() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold mb-2">Visit Our Office</h2>
-            <p className="text-gray-300">Located at VIIT - Computer Science Department</p>
+            <p className="text-gray-300">Located at 305, Pentagon Towers 2</p>
           </div>
           
           <div className="bg-gray-700 rounded-lg overflow-hidden h-96 shadow-xl">
             <iframe
               title="Google Map Location"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3771.418632656263!2d73.8842823!3d18.459561!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2eaf4662547c9%3A0xd96690b0786458f5!2sVIIT%20-%20Computer%20Science%20Department!5e0!3m2!1sen!2sin!4v1692174556789!5m2!1sen!2sin"
+              src="https://maps.google.com/maps?q=18.5158057,73.9271644&z=16&output=embed"
               width="100%"
               height="100%"
               style={{ border: 0 }}
-              allowFullScreen=""
+              allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
+            />
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from "@clerk/clerk-react";
-import { Download, FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X } from 'lucide-react';
+import { Download, FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X, Eye } from 'lucide-react';
 const backend_url = import.meta.env.VITE_BACKEND_URL;
 
 const PATENT_STAGES = [
@@ -70,6 +70,7 @@ export default function UserPatents() {
     try {
       const res = await fetch(`${backend_url}/api/patents/${patent._id}`);
       const result = await res.json();
+      // console.log('Fetched patent details:', result.data);
       if (result.success && result.data) {
         setSelectedPatent(result.data);
         setPatents(prev => prev.map(p => p._id === result.data._id ? result.data : p));
@@ -97,18 +98,18 @@ export default function UserPatents() {
 
   const getStatusBadge = (status) => {
     const map = {
-      draft:               { color: 'bg-gray-500/20 text-gray-300 border-gray-500/30',       label: '📝 Draft' },
-      submitted:           { color: 'bg-blue-500/20 text-blue-300 border-blue-500/30',       label: '📤 Submitted' },
-      applied:             { color: 'bg-blue-500/20 text-blue-300 border-blue-500/30',       label: '📤 Submitted' },
+      draft: { color: 'bg-gray-500/20 text-gray-300 border-gray-500/30', label: '📝 Draft' },
+      submitted: { color: 'bg-blue-500/20 text-blue-300 border-blue-500/30', label: '📤 Submitted' },
+      applied: { color: 'bg-blue-500/20 text-blue-300 border-blue-500/30', label: '📤 Submitted' },
       'under-examination': { color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', label: '🔍 Under Examination' },
-      'under-review':      { color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', label: '🔍 Under Review' },
-      pending:             { color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', label: '⏳ Pending' },
-      granted:             { color: 'bg-green-500/20 text-green-300 border-green-500/30',    label: '✅ Granted' },
-      approved:            { color: 'bg-green-500/20 text-green-300 border-green-500/30',    label: '✅ Approved' },
-      published:           { color: 'bg-purple-500/20 text-purple-300 border-purple-500/30', label: '📖 Published' },
-      rejected:            { color: 'bg-red-500/20 text-red-300 border-red-500/30',          label: '❌ Rejected' },
-      cancelled:           { color: 'bg-red-500/20 text-red-300 border-red-500/30',          label: '❌ Cancelled' },
-      renewal:             { color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', label: '🔄 Renewal' },
+      'under-review': { color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', label: '🔍 Under Review' },
+      pending: { color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', label: '⏳ Pending' },
+      granted: { color: 'bg-green-500/20 text-green-300 border-green-500/30', label: '✅ Granted' },
+      approved: { color: 'bg-green-500/20 text-green-300 border-green-500/30', label: '✅ Approved' },
+      published: { color: 'bg-purple-500/20 text-purple-300 border-purple-500/30', label: '📖 Published' },
+      rejected: { color: 'bg-red-500/20 text-red-300 border-red-500/30', label: '❌ Rejected' },
+      cancelled: { color: 'bg-red-500/20 text-red-300 border-red-500/30', label: '❌ Cancelled' },
+      renewal: { color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', label: '🔄 Renewal' },
     };
     return map[status] || { color: 'bg-gray-500/20 text-gray-300 border-gray-500/30', label: '📄 Pending' };
   };
@@ -141,6 +142,42 @@ export default function UserPatents() {
     } catch { alert('Error deleting patent application'); }
   };
 
+  const handleDownload = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+
+  const handleView = (file) => {
+    const isDocx =
+      file.mimetype?.includes(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      );
+
+    if (isDocx) {
+      window.open(
+        `https://docs.google.com/gview?embedded=true&url=${file.cloudinaryUrl}`,
+        "_blank"
+      );
+    } else {
+      window.open(file.cloudinaryUrl, "_blank");
+    }
+  };
   // ── Loading / Error ──
   if (loading) return (
     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
@@ -229,7 +266,7 @@ export default function UserPatents() {
                                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all
                                     ${done ? `${color.bg} text-white` :
                                       active ? `${color.bg} text-white ring-2 ${color.ring} ring-offset-1 ring-offset-slate-900` :
-                                      'bg-slate-700 text-slate-500'}`}>
+                                        'bg-slate-700 text-slate-500'}`}>
                                     {done ? '✓' : stage.id}
                                   </div>
                                   {idx < PATENT_STAGES.length - 1 && (
@@ -338,11 +375,61 @@ export default function UserPatents() {
                       <p className="text-xs text-slate-500">Inventor</p>
                       <p className="text-white text-sm">{selectedPatent.inventorName}</p>
                     </div>
+
                     <div>
-                      <p className="text-xs text-slate-500">Applicant</p>
-                      <p className="text-white text-sm">{selectedPatent.applicantName || '—'}</p>
+                      <p className="text-xs text-slate-500">Primary Applicant</p>
+                      <p className="text-white text-sm">
+                        {selectedPatent.applicantName || "—"}
+                      </p>
                     </div>
                   </div>
+
+                  {selectedPatent.additionalApplicants?.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs text-slate-500 mb-2">
+                        Additional Applicants ({selectedPatent.additionalApplicants.length})
+                      </p>
+
+                      <div className="space-y-2">
+                        {selectedPatent.additionalApplicants.map((applicant, index) => (
+                          <div
+                            key={applicant._id || index}
+                            className="bg-slate-700/40 rounded-lg p-3"
+                          >
+                            <div className="grid md:grid-cols-2 gap-2">
+                              <div>
+                                <p className="text-xs text-slate-500">Name</p>
+                                <p className="text-white text-sm">
+                                  {applicant.name}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-xs text-slate-500">Email</p>
+                                <p className="text-white text-sm break-all">
+                                  {applicant.email}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-xs text-slate-500">Phone</p>
+                                <p className="text-white text-sm">
+                                  {applicant.phone}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-xs text-slate-500">Address</p>
+                                <p className="text-white text-sm">
+                                  {applicant.address}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-xs text-slate-500">Patent Type</p>
@@ -401,9 +488,28 @@ export default function UserPatents() {
                                 <p className="text-slate-500 text-xs">{Math.round((file.size || 0) / 1024)} KB</p>
                               </div>
                             </div>
-                            <button className="text-purple-400 hover:text-purple-300 p-1.5 rounded transition-colors flex-shrink-0">
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => handleView(file)}
+                                className="text-green-400 hover:text-green-300 p-1"
+                                title="View Document"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+
+                              <button
+                                onClick={() =>
+                                  handleDownload(
+                                    file.cloudinaryUrl,
+                                    file.originalName
+                                  )
+                                }
+                                className="text-blue-400 hover:text-blue-300 p-1"
+                                title="Download Document"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -420,9 +526,28 @@ export default function UserPatents() {
                                 <p className="text-slate-500 text-xs">{Math.round((file.size || 0) / 1024)} KB</p>
                               </div>
                             </div>
-                            <button className="text-blue-400 hover:text-blue-300 p-1.5 rounded transition-colors flex-shrink-0">
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => handleView(file)}
+                                className="text-green-400 hover:text-green-300 p-1"
+                                title="View Document"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+
+                              <button
+                                onClick={() =>
+                                  handleDownload(
+                                    file.cloudinaryUrl,
+                                    file.originalName
+                                  )
+                                }
+                                className="text-blue-400 hover:text-blue-300 p-1"
+                                title="Download Document"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -467,16 +592,14 @@ export default function UserPatents() {
                         const { color } = stage;
 
                         return (
-                          <div key={stage.id} className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
-                            isCurrent ? color.light :
+                          <div key={stage.id} className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${isCurrent ? color.light :
                             isCompleted ? 'bg-slate-700/30 border-slate-600/30' :
-                            'bg-slate-800/30 border-slate-700/20 opacity-50'
-                          }`}>
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
-                              isCompleted ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20' :
-                              isCurrent ? `${color.bg} text-white shadow-md ring-2 ${color.ring} ring-offset-2 ring-offset-slate-900` :
-                              'bg-slate-700 text-slate-500'
+                              'bg-slate-800/30 border-slate-700/20 opacity-50'
                             }`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${isCompleted ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20' :
+                              isCurrent ? `${color.bg} text-white shadow-md ring-2 ${color.ring} ring-offset-2 ring-offset-slate-900` :
+                                'bg-slate-700 text-slate-500'
+                              }`}>
                               {isCompleted ? <CheckCircle className="w-5 h-5" /> : isCurrent ? <Clock className="w-5 h-5" /> : <span>{stage.id}</span>}
                             </div>
 

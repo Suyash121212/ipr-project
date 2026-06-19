@@ -196,7 +196,7 @@ const getPatentById = async (req, res) => {
         if (!patent) {
             return res.status(404).json({ success: false, message: 'Patent application not found' });
         }
-
+        console.log('Fetched patent:', patent);
         res.json({ success: true, data: patent });
     } catch (error) {
         console.error('Error fetching patent:', error);

@@ -116,9 +116,11 @@ const TrademarkServices = () => {
             {/* Video Placeholder */}
             <div className="relative">
               <div className="bg-slate-700/50 rounded-2xl aspect-video flex items-center justify-center backdrop-blur-sm border border-slate-600">
-                <div className="w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center hover:bg-slate-500 transition-colors cursor-pointer">
-                  <div className="w-0 h-0 border-l-6 border-l-white border-y-4 border-y-transparent ml-1"></div>
-                </div>
+                <img
+                  src="trademark.png"
+                  alt="Trademark Services"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
@@ -217,79 +219,6 @@ const TrademarkServices = () => {
           </div>
         </div>
       </section>
-
-      {/* Contact Form */}
-      <section className="py-16 px-4 bg-slate-800/30">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-4">Ready to Get Started?</h2>
-            <p className="text-slate-300 text-lg">Contact us today for expert trademark services assistance</p>
-          </div>
-
-          <div className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-white font-medium mb-2">Full Name *</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  placeholder="Your full name"
-                  className="w-full px-4 py-3 bg-slate-700/50 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-white font-medium mb-2">Email Address *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="your@email.com"
-                  className="w-full px-4 py-3 bg-slate-700/50 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-white font-medium mb-2">Phone Number</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="+1 (555) 123-4567"
-                className="w-full px-4 py-3 bg-slate-700/50 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-white font-medium mb-2">Tell us about your trademark services needs *</label>
-              <textarea
-                name="services"
-                value={formData.services}
-                onChange={handleInputChange}
-                placeholder="Describe your trademark service requirements..."
-                rows="4"
-                className="w-full px-4 py-3 bg-slate-700/50 text-white rounded-lg border border-slate-600 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 resize-none transition-all"
-                required
-              ></textarea>
-            </div>
-
-            <div
-              onClick={handleSubmit}
-              className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer text-center"
-            >
-              Send Trademark Inquiry →
-            </div>
-          </div>
-        </div>
-      </section>
-
-      
     </div>
   );
 };

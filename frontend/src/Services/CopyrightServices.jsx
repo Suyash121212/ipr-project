@@ -137,9 +137,11 @@ const CopyrightServices = () => {
             {/* Right Side - Video Placeholder */}
             <div className="relative">
               <div className="bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl aspect-video flex items-center justify-center shadow-2xl">
-                <div className="w-20 h-20 bg-gray-500 rounded-full flex items-center justify-center shadow-lg">
-                  <div className="w-0 h-0 border-l-8 border-l-white border-t-6 border-t-transparent border-b-6 border-b-transparent ml-2"></div>
-                </div>
+                <img
+                  src="copyright.png"
+                  alt="Copyright Services"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent rounded-2xl"></div>
             </div>
@@ -221,78 +223,6 @@ const CopyrightServices = () => {
           </div>
         </div>
       </section>
-
-      {/* Contact Form Section */}
-      <section className="py-20 bg-gray-900/60">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-6">Ready to Get Started?</h2>
-            <p className="text-gray-300 text-lg">Contact us today for expert copyright services assistance</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="bg-gray-800/60 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50 shadow-2xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-white font-semibold mb-3 text-sm">Full Name *</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  placeholder="Your full name"
-                  required
-                  className="w-full px-4 py-4 bg-gray-700/80 text-white rounded-lg border border-gray-600/50 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition-all duration-200 placeholder-gray-400"
-                />
-              </div>
-              <div>
-                <label className="block text-white font-semibold mb-3 text-sm">Email Address *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="your@email.com"
-                  required
-                  className="w-full px-4 py-4 bg-gray-700/80 text-white rounded-lg border border-gray-600/50 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition-all duration-200 placeholder-gray-400"
-                />
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-white font-semibold mb-3 text-sm">Phone Number</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="+1 (555) 123-4567"
-                className="w-full px-4 py-4 bg-gray-700/80 text-white rounded-lg border border-gray-600/50 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition-all duration-200 placeholder-gray-400"
-              />
-            </div>
-
-            <div className="mb-8">
-              <label className="block text-white font-semibold mb-3 text-sm">Tell us about your copyright service needs *</label>
-              <textarea
-                name="services"
-                value={formData.services}
-                onChange={handleInputChange}
-                placeholder="Describe your copyright service requirements..."
-                rows={5}
-                required
-                className="w-full px-4 py-4 bg-gray-700/80 text-white rounded-lg border border-gray-600/50 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition-all duration-200 resize-none placeholder-gray-400"
-              ></textarea>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-4 px-8 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-            >
-              Send Copyright Inquiry →
-            </button>
-          </form>
-        </div>
-      </section>
-
        </div>
   );
 }

@@ -72,12 +72,12 @@ const IndustrialDesignServices = () => {
               </p>
             </div>
             <div className="flex justify-center">
-              <div className="w-80 h-80 bg-gray-700 rounded-lg flex items-center justify-center">
-                <div className="w-16 h-16 bg-teal-500 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
-                  </svg>
-                </div>
+              <div className="w-120 h-80 bg-gray-700 rounded-lg flex items-center justify-center">
+                <img
+                  src="industrialdesign.png"
+                  alt="Industrial Design Services"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
@@ -168,58 +168,7 @@ const IndustrialDesignServices = () => {
             ))}
           </div>
         </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-gray-800">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-gray-300 text-lg mb-8">
-            Contact us today for expert industrial design services assistance
-          </p>
-          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            <div>
-              <label className="block text-left text-sm font-medium mb-2">Full Name *</label>
-              <input
-                type="text"
-                placeholder="Your full name"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-teal-500 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-left text-sm font-medium mb-2">Email Address *</label>
-              <input
-                type="email"
-                placeholder="youremail@email.com"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-teal-500 text-white"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-left text-sm font-medium mb-2">Phone Number</label>
-              <input
-                type="tel"
-                placeholder="+1 (555) 000-0000"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-teal-500 text-white"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-left text-sm font-medium mb-2">Tell us about your industrial design services needs *</label>
-              <textarea
-                placeholder="Describe your industrial design service requirements"
-                rows="4"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-teal-500 text-white resize-none"
-              ></textarea>
-            </div>
-            <div className="md:col-span-2">
-              <button className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-                Send Message →
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      
+      </section> 
     </div>
   );
 };

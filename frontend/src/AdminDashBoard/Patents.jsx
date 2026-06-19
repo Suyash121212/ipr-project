@@ -1,6 +1,6 @@
 const backend_url = import.meta.env.VITE_BACKEND_URL;
 import { useEffect, useState } from 'react';
-import { FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X } from 'lucide-react';
+import { FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X, Eye, Download } from 'lucide-react';
 
 const PATENT_STAGES = [
   {
@@ -190,16 +190,16 @@ export default function Patents() {
     switch (patent?.status) {
       case 'draft':
       case 'submitted':
-      case 'applied':          return 1;
-      case 'published':        return 2;
+      case 'applied': return 1;
+      case 'published': return 2;
       case 'under-examination':
       case 'under-review':
-      case 'pending':          return 3;
-      case 'objection':        return 4;
+      case 'pending': return 3;
+      case 'objection': return 4;
       case 'granted':
-      case 'approved':         return 5;
-      case 'renewal':          return 6;
-      default:                 return 1;
+      case 'approved': return 5;
+      case 'renewal': return 6;
+      default: return 1;
     }
   };
 
@@ -235,9 +235,58 @@ export default function Patents() {
 
   const formatDate = (d) => new Date(d).toLocaleDateString();
 
+
+  const handleViewFile = (file) => {
+    if (!file?.cloudinaryUrl) {
+      alert("File not available");
+      return;
+    }
+
+    const extension = file.originalName?.split(".").pop()?.toLowerCase();
+
+    if (extension === "pdf") {
+      window.open(file.cloudinaryUrl, "_blank");
+    } else if (["doc", "docx"].includes(extension)) {
+      window.open(
+        `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
+          file.cloudinaryUrl
+        )}`,
+        "_blank"
+      );
+    } else {
+      window.open(file.cloudinaryUrl, "_blank");
+    }
+  };
+
   const handleDownloadFile = (patent, file) => {
-    if (file?._id) window.open(`${backend_url}/api/patents/${patent._id}/download/${file._id}`, '_blank');
-    else alert('File not available for download');
+    if (file?._id) {
+      window.open(
+        `${backend_url}/api/patents/${patent._id}/download/${file._id}`,
+        "_blank"
+      );
+    } else {
+      alert("File not available for download");
+    } const handleDownloadFile = async (file) => {
+      try {
+        const response = await fetch(file.cloudinaryUrl);
+        const blob = await response.blob();
+
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = file.originalName || file.filename;
+
+        document.body.appendChild(link);
+        link.click();
+
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+
+      } catch (error) {
+        console.error("Download failed:", error);
+      }
+    };
   };
 
   if (error) return (
@@ -318,7 +367,7 @@ export default function Patents() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button onClick={() => handleViewPatent(patent)} className="text-blue-400 hover:text-blue-300">View</button>
-                        <button onClick={() => { const f = patent.supportingDocuments?.[0] || patent.technicalDrawings?.[0]; handleDownloadFile(patent, f); }} className="text-green-400 hover:text-green-300">Download</button>
+                        <button onClick={() => { const f = patent.supportingDocuments?.[0] || patent.technicalDrawings?.[0]; handleDownloadFile(file); }} className="text-green-400 hover:text-green-300">Download</button>
                         <button onClick={() => handleDeletePatent(patent._id)} className="text-red-400 hover:text-red-300">Delete</button>
                       </td>
                     </tr>
@@ -367,33 +416,106 @@ export default function Patents() {
               <div className="p-6 space-y-6">
 
                 {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5 space-y-4">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Basic Information</h4>
+                <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5 space-y-4">
+                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Basic Information
+                  </h4>
+
+                  <div>
+                    <p className="text-xs text-slate-500">Invention Title</p>
+                    <p className="text-white font-semibold">
+                      {selectedPatent.inventionTitle}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-xs text-slate-500">Invention Title</p>
-                      <p className="text-white font-semibold">{selectedPatent.inventionTitle}</p>
+                      <p className="text-xs text-slate-500">Inventor</p>
+                      <p className="text-white text-sm">
+                        {selectedPatent.inventorName}
+                      </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><p className="text-xs text-slate-500">Inventor</p><p className="text-white text-sm">{selectedPatent.inventorName}</p></div>
-                      <div><p className="text-xs text-slate-500">Applicant</p><p className="text-white text-sm">{selectedPatent.applicantName || 'Same as inventor'}</p></div>
+
+                    ```
+                    <div>
+                      <p className="text-xs text-slate-500">Primary Applicant</p>
+                      <p className="text-white text-sm">
+                        {selectedPatent.applicantName || "Same as inventor"}
+                      </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><p className="text-xs text-slate-500">Patent Type</p><p className="text-white text-sm capitalize">{selectedPatent.patentType || 'Utility Patent'}</p></div>
-                      <div><p className="text-xs text-slate-500">Filing Date</p><p className="text-white text-sm">{formatDate(selectedPatent.filingDate || selectedPatent.createdAt)}</p></div>
+                    ```
+
+                  </div>
+
+                  {selectedPatent.additionalApplicants?.length > 0 && (<div> <p className="text-xs text-slate-500 mb-2">
+                    Additional Applicants ({selectedPatent.additionalApplicants.length}) </p>
+
+                    ```
+                    <div className="space-y-2">
+                      {selectedPatent.additionalApplicants.map((applicant, index) => (
+                        <div
+                          key={applicant._id || index}
+                          className="bg-slate-700/40 rounded-lg p-3"
+                        >
+                          <div className="grid md:grid-cols-2 gap-2">
+                            <div>
+                              <p className="text-xs text-slate-500">Name</p>
+                              <p className="text-white text-sm">
+                                {applicant.name}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-xs text-slate-500">Email</p>
+                              <p className="text-white text-sm break-all">
+                                {applicant.email}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-xs text-slate-500">Phone</p>
+                              <p className="text-white text-sm">
+                                {applicant.phone}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-xs text-slate-500">Address</p>
+                              <p className="text-white text-sm">
+                                {applicant.address}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5 space-y-4">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Contact & Dates</h4>
-                    {selectedPatent.email && <div><p className="text-xs text-slate-500">Email</p><p className="text-white text-sm">{selectedPatent.email}</p></div>}
-                    {selectedPatent.phone && <div><p className="text-xs text-slate-500">Phone</p><p className="text-white text-sm">{selectedPatent.phone}</p></div>}
-                    <div><p className="text-xs text-slate-500">Priority Date</p><p className="text-white text-sm">{selectedPatent.priorityDate ? formatDate(selectedPatent.priorityDate) : 'Not Claimed'}</p></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><p className="text-xs text-slate-500">Created</p><p className="text-slate-300 text-sm">{formatDate(selectedPatent.createdAt)}</p></div>
-                      <div><p className="text-xs text-slate-500">Updated</p><p className="text-slate-300 text-sm">{formatDate(selectedPatent.updatedAt)}</p></div>
+
+
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500">Patent Type</p>
+                      <p className="text-white text-sm capitalize">
+                        {selectedPatent.patentType || "Utility Patent"}
+                      </p>
                     </div>
+
+
+                    <div>
+                      <p className="text-xs text-slate-500">Filing Date</p>
+                      <p className="text-white text-sm">
+                        {formatDate(
+                          selectedPatent.filingDate || selectedPatent.createdAt
+                        )}
+                      </p>
+                    </div>
+
+
                   </div>
                 </div>
+
 
                 {/* Technical Description */}
                 {selectedPatent.technicalDescription && (
@@ -412,39 +534,119 @@ export default function Patents() {
                 )}
 
                 {/* Documents */}
-                {((selectedPatent.supportingDocuments?.length > 0) || (selectedPatent.technicalDrawings?.length > 0)) && (
-                  <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Uploaded Documents</h4>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {selectedPatent.technicalDrawings?.length > 0 && (
-                        <div>
-                          <p className="text-xs text-slate-500 mb-2">Technical Drawings ({selectedPatent.technicalDrawings.length})</p>
-                          {selectedPatent.technicalDrawings.map((file, i) => (
-                            <div key={i} className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg mb-2">
-                              <div className="flex items-center gap-2"><span className="text-purple-400">🖼️</span>
-                                <div><p className="text-white text-xs">{file.originalName || file.filename}</p><p className="text-slate-500 text-xs">{Math.round((file.size || 0) / 1024)} KB</p></div>
+                {((selectedPatent.supportingDocuments?.length > 0) ||
+                  (selectedPatent.technicalDrawings?.length > 0)) && (
+
+                    <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5">
+                      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
+                        Uploaded Documents
+                      </h4>
+
+                      ```
+                      <div className="grid md:grid-cols-2 gap-4">
+
+                        {/* Technical Drawings */}
+                        {selectedPatent.technicalDrawings?.length > 0 && (
+                          <div>
+                            <p className="text-xs text-slate-500 mb-2">
+                              Technical Drawings ({selectedPatent.technicalDrawings.length})
+                            </p>
+
+                            {selectedPatent.technicalDrawings.map((file, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg mb-2"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-purple-400">📎</span>
+
+                                  <div className="min-w-0">
+                                    <p className="text-white text-xs truncate">
+                                      {file.originalName || file.filename}
+                                    </p>
+
+                                    <p className="text-slate-500 text-xs">
+                                      {Math.round((file.size || 0) / 1024)} KB
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <button
+                                    onClick={() => handleViewFile(file)}
+                                    className="text-green-400 hover:text-green-300 p-1.5 rounded transition-colors"
+                                    title="View Document"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDownloadFile(selectedPatent, file)}
+                                    className="text-blue-400 hover:text-blue-300 p-1.5 rounded transition-colors"
+                                    title="Download Document"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
-                              <button onClick={() => handleDownloadFile(selectedPatent, file)} className="text-purple-400 hover:text-purple-300 text-xs px-2 py-1 bg-purple-500/20 rounded">Download</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {selectedPatent.supportingDocuments?.length > 0 && (
-                        <div>
-                          <p className="text-xs text-slate-500 mb-2">Supporting Documents ({selectedPatent.supportingDocuments.length})</p>
-                          {selectedPatent.supportingDocuments.map((file, i) => (
-                            <div key={i} className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg mb-2">
-                              <div className="flex items-center gap-2"><span className="text-blue-400">📎</span>
-                                <div><p className="text-white text-xs">{file.originalName || file.filename}</p><p className="text-slate-500 text-xs">{Math.round((file.size || 0) / 1024)} KB</p></div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Supporting Documents */}
+                        {selectedPatent.supportingDocuments?.length > 0 && (
+                          <div>
+                            <p className="text-xs text-slate-500 mb-2">
+                              Supporting Documents ({selectedPatent.supportingDocuments.length})
+                            </p>
+
+                            {selectedPatent.supportingDocuments.map((file, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg mb-2"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-blue-400">📎</span>
+
+                                  <div className="min-w-0">
+                                    <p className="text-white text-xs truncate">
+                                      {file.originalName || file.filename}
+                                    </p>
+
+                                    <p className="text-slate-500 text-xs">
+                                      {Math.round((file.size || 0) / 1024)} KB
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <button
+                                    onClick={() => handleViewFile(file)}
+                                    className="text-green-400 hover:text-green-300 p-1.5 rounded transition-colors"
+                                    title="View Document"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDownloadFile(selectedPatent, file)}
+                                    className="text-blue-400 hover:text-blue-300 p-1.5 rounded transition-colors"
+                                    title="Download Document"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
-                              <button onClick={() => handleDownloadFile(selectedPatent, file)} className="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 bg-blue-500/20 rounded">Download</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
+
+                      </div>
+                      ```
+
                     </div>
-                  </div>
-                )}
+                  )}
+
 
                 {/* ── 6-Stage Interactive Timeline ── */}
                 <div className="bg-slate-800/70 rounded-xl p-6 border border-white/5">
@@ -487,10 +689,10 @@ export default function Patents() {
                             ${justSaved
                               ? 'bg-green-500/10 border-green-500/40 shadow-md shadow-green-500/10'
                               : isCurrent
-                              ? `${color.light} shadow-md`
-                              : isCompleted
-                              ? 'bg-slate-700/30 border-slate-600/30 hover:bg-slate-700/50'
-                              : 'bg-slate-800/40 border-slate-700/20 hover:bg-slate-700/30 opacity-60 hover:opacity-90'
+                                ? `${color.light} shadow-md`
+                                : isCompleted
+                                  ? 'bg-slate-700/30 border-slate-600/30 hover:bg-slate-700/50'
+                                  : 'bg-slate-800/40 border-slate-700/20 hover:bg-slate-700/30 opacity-60 hover:opacity-90'
                             }`}
                         >
                           {/* Circle */}
@@ -498,18 +700,18 @@ export default function Patents() {
                             ${justSaved
                               ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 ring-2 ring-green-400 ring-offset-2 ring-offset-slate-900'
                               : isCompleted
-                              ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
-                              : isCurrent
-                              ? `${color.bg} text-white shadow-lg ring-2 ${color.ring} ring-offset-2 ring-offset-slate-900`
-                              : 'bg-slate-700 text-slate-400'
+                                ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
+                                : isCurrent
+                                  ? `${color.bg} text-white shadow-lg ring-2 ${color.ring} ring-offset-2 ring-offset-slate-900`
+                                  : 'bg-slate-700 text-slate-400'
                             }`}>
                             {justSaved
                               ? <CheckCircle className="w-5 h-5" />
                               : isCompleted
-                              ? <CheckCircle className="w-5 h-5" />
-                              : isCurrent
-                              ? <Clock className="w-5 h-5" />
-                              : <span>{stage.id}</span>
+                                ? <CheckCircle className="w-5 h-5" />
+                                : isCurrent
+                                  ? <Clock className="w-5 h-5" />
+                                  : <span>{stage.id}</span>
                             }
                           </div>
 
@@ -541,14 +743,13 @@ export default function Patents() {
                           </div>
 
                           {/* Right icon */}
-                          <div className={`flex-shrink-0 mt-1 transition-all ${
-                            justSaved ? 'text-green-400' : isCurrent ? color.text : 'text-slate-600 group-hover:text-slate-400'
-                          }`}>
+                          <div className={`flex-shrink-0 mt-1 transition-all ${justSaved ? 'text-green-400' : isCurrent ? color.text : 'text-slate-600 group-hover:text-slate-400'
+                            }`}>
                             {stageUpdating
                               ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                               : justSaved
-                              ? <CheckCircle className="w-4 h-4" />
-                              : <ChevronRight className="w-4 h-4" />
+                                ? <CheckCircle className="w-4 h-4" />
+                                : <ChevronRight className="w-4 h-4" />
                             }
                           </div>
                         </div>

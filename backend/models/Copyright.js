@@ -1,9 +1,13 @@
 const mongoose = require('mongoose');
 const Counter = require("../models/counterModel");
+
 const documentSchema = new mongoose.Schema({
   filename: String,
   originalName: String,
-  path: String,
+  cloudinaryUrl: String,
+  download_url: String,
+  publicId: String,
+  resourceType: String,
   size: Number,
   mimetype: String,
   uploadDate: {
@@ -11,6 +15,22 @@ const documentSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+const applicantSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String
+  },
+  phone: {
+    type: String
+  },
+  address: {
+    type: String
+  }
+}, { _id: false });
 
 const copyrightSchema = new mongoose.Schema({
   clerkUserId: {
@@ -25,7 +45,16 @@ const copyrightSchema = new mongoose.Schema({
   workType: String,
   language: String,
   authorName: String,
+
+  // Primary applicant fields
   applicantName: String,
+  applicantEmail: String,
+  applicantPhone: String,
+  applicantAddress: String,
+
+  // Additional applicants
+  additionalApplicants: [applicantSchema],
+
   description: String,
   publicationDate: Date,
   isPublished: {
@@ -37,16 +66,12 @@ const copyrightSchema = new mongoose.Schema({
     type: Number,
     default: 1
   },
-
-  // FIX 1: Added currentStage to track admin-controlled 6-stage progress
   currentStage: {
     type: Number,
     default: 1,
     min: 1,
     max: 6
   },
-
-  // FIX 2: Expanded status enum to cover all 6 stages
   status: {
     type: String,
     enum: [
@@ -63,11 +88,10 @@ const copyrightSchema = new mongoose.Schema({
     ],
     default: 'draft'
   },
-
   applicationNumber: {
     type: String,
     unique: true,
-    sparse: true  // allows multiple drafts without applicationNumber
+    sparse: true
   },
   filingDate: {
     type: Date,
@@ -81,21 +105,14 @@ const copyrightSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// FIX 3: Only generate application number when status changes to 'submitted'
-// (not on every new document) — prevents duplicate key errors for drafts
-// FIX 4: Sequential number per year using last existing number (not count)
-//         so deleting records doesn't break the sequence
-// Auto-generate application number only when status changes to 'submitted'
 copyrightSchema.pre("save", async function () {
   if (this.isNew && !this.applicationNumber) {
     const year = new Date().getFullYear();
-
     const counter = await Counter.findOneAndUpdate(
       { name: `copyright_${year}` },
       { $inc: { seq: 1 } },
       { returnDocument: "after", upsert: true }
     );
-
     this.applicationNumber =
       `CR-${year}-${counter.seq.toString().padStart(5, "0")}`;
   }

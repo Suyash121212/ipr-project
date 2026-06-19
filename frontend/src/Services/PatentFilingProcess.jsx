@@ -10,7 +10,9 @@ import {
   Download,
   Info,
   CheckCircle,
-  Send
+  Send,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 
@@ -25,6 +27,8 @@ const downloadSampleDocument = () => {
   document.body.removeChild(link);
 };
 
+const emptyApplicant = () => ({ name: '', email: '', phone: '', address: '' });
+
 const PatentFilingProcess = () => {
   const { user } = useUser();
   const [currentStep, setCurrentStep] = useState(1);
@@ -32,10 +36,12 @@ const PatentFilingProcess = () => {
     inventionTitle: '',
     inventorName: '',
     applicantName: '',
+    address: '',
     technicalDescription: '',
     email: '',
     phone: ''
   });
+  const [additionalApplicants, setAdditionalApplicants] = useState([]);
   const [technicalDrawings, setTechnicalDrawings] = useState([]);
   const [supportingDocuments, setSupportingDocuments] = useState([]);
   const [dragOver, setDragOver] = useState({ technical: false, supporting: false });
@@ -73,6 +79,32 @@ const PatentFilingProcess = () => {
     }
   };
 
+  // ── Additional Applicants ──
+  const addApplicant = () => {
+    setAdditionalApplicants([...additionalApplicants, emptyApplicant()]);
+  };
+
+  const removeApplicant = (index) => {
+    setAdditionalApplicants(additionalApplicants.filter((_, i) => i !== index));
+    // Clear related validation errors
+    const newErrors = { ...validationErrors };
+    Object.keys(newErrors).forEach(key => {
+      if (key.startsWith(`applicant_${index}_`)) delete newErrors[key];
+    });
+    setValidationErrors(newErrors);
+  };
+
+  const handleApplicantChange = (index, field, value) => {
+    const updated = additionalApplicants.map((a, i) =>
+      i === index ? { ...a, [field]: value } : a
+    );
+    setAdditionalApplicants(updated);
+    const key = `applicant_${index}_${field}`;
+    if (validationErrors[key]) {
+      setValidationErrors({ ...validationErrors, [key]: '' });
+    }
+  };
+
   const handleDragOver  = (e, type) => { e.preventDefault(); setDragOver({ ...dragOver, [type]: true }); };
   const handleDragLeave = (e, type) => { e.preventDefault(); setDragOver({ ...dragOver, [type]: false }); };
 
@@ -95,12 +127,13 @@ const PatentFilingProcess = () => {
     else setSupportingDocuments(supportingDocuments.filter((_, i) => i !== index));
   };
 
-  // ── Step 1 validation only — NO API call ──
+  // ── Step 1 validation ──
   const validateStep1 = () => {
     const errors = {};
     if (!formData.inventionTitle?.trim())        errors.inventionTitle        = 'Invention title is required';
     if (!formData.inventorName?.trim())          errors.inventorName          = 'Inventor name is required';
     if (!formData.applicantName?.trim())         errors.applicantName         = 'Applicant name is required';
+    if (!formData.address?.trim())               errors.address               = 'Address is required';
     if (!formData.technicalDescription?.trim())  errors.technicalDescription  = 'Technical description is required';
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
@@ -108,11 +141,21 @@ const PatentFilingProcess = () => {
     if (formData.phone && !/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
       errors.phone = 'Please enter a valid 10-digit phone number';
     }
+
+    // Validate additional applicants
+    additionalApplicants.forEach((applicant, index) => {
+      if (!applicant.name?.trim())
+        errors[`applicant_${index}_name`] = 'Name is required';
+      if (applicant.email && !/\S+@\S+\.\S+/.test(applicant.email))
+        errors[`applicant_${index}_email`] = 'Enter a valid email';
+      if (applicant.phone && !/^\d{10}$/.test(applicant.phone.replace(/\D/g, '')))
+        errors[`applicant_${index}_phone`] = 'Enter a valid 10-digit phone number';
+    });
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // ── Step 1 → Step 2: validate only, zero API calls ──
   const handleStep1Next = () => {
     if (!validateStep1()) {
       setError('Please fill all required fields correctly');
@@ -122,14 +165,12 @@ const PatentFilingProcess = () => {
     setCurrentStep(2);
   };
 
-  // ── Step 2 → Step 3: just advance ──
   const handleStep2Next = () => {
     setError('');
     setCurrentStep(3);
   };
 
-  // ── FINAL SUBMIT: the ONE place that touches the API ──
-  // Create patent → upload files → all in one go, nothing saved before this
+  // ── FINAL SUBMIT ──
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
@@ -137,22 +178,26 @@ const PatentFilingProcess = () => {
     try {
       if (!user) throw new Error('User not authenticated. Please log in.');
 
-      // ── Step A: Create patent, already marked as 'submitted' ──
       const patentData = {
         clerkUserId:          user.id,
         inventionTitle:       formData.inventionTitle.trim(),
         inventorName:         formData.inventorName.trim(),
         applicantName:        formData.applicantName.trim(),
+        address:              formData.address.trim(),
         technicalDescription: formData.technicalDescription.trim(),
         email:                formData.email?.trim()  || undefined,
         phone:                formData.phone?.trim()  || undefined,
+        additionalApplicants: additionalApplicants.map(a => ({
+          name:    a.name.trim(),
+          email:   a.email?.trim()   || undefined,
+          phone:   a.phone?.trim()   || undefined,
+          address: a.address?.trim() || undefined,
+        })),
         currentStep:          3,
-        status:               'submitted',   // ← submitted immediately, never saved as draft
+        status:               'submitted',
         completedDocuments,
         filingDate:           new Date().toISOString(),
       };
-
-      //console.log('📤 Sending to backend:', JSON.stringify(patentData, null, 2));
 
       const createRes = await fetch(`${API_BASE_URL}/patents`, {
         method: 'POST',
@@ -178,35 +223,27 @@ const PatentFilingProcess = () => {
       }
 
       const patentId = createData.data._id || createData.data.id;
-     // console.log('✅ Patent created with ID:', patentId);
 
-      // ── Step B: Upload technical drawings (if any) ──
       if (technicalDrawings.length > 0) {
-        //console.log('📤 Uploading technical drawings:', technicalDrawings.length);
         const fd = new FormData();
         technicalDrawings.forEach(file => fd.append('drawings', file));
         const uploadRes = await fetch(`${API_BASE_URL}/patents/${patentId}/technical-drawings`, {
-          method: 'POST',
-          body: fd,
+          method: 'POST', body: fd,
         });
         const uploadData = await uploadRes.json();
         if (!uploadRes.ok) throw new Error(uploadData.error || uploadData.message || 'Technical drawings upload failed');
       }
 
-      // ── Step C: Upload supporting documents (if any) ──
       if (supportingDocuments.length > 0) {
-        //console.log('📤 Uploading supporting documents:', supportingDocuments.length);
         const fd = new FormData();
         supportingDocuments.forEach(file => fd.append('documents', file));
         const uploadRes = await fetch(`${API_BASE_URL}/patents/${patentId}/supporting-documents`, {
-          method: 'POST',
-          body: fd,
+          method: 'POST', body: fd,
         });
         const uploadData = await uploadRes.json();
         if (!uploadRes.ok) throw new Error(uploadData.error || uploadData.message || 'Supporting documents upload failed');
       }
 
-      // ── Step D: Show success ──
       setSubmittedPatentId(patentId);
       setSubmitted(true);
 
@@ -415,38 +452,140 @@ const PatentFilingProcess = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-200">
-                    Applicant Name <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text" name="applicantName" value={formData.applicantName}
-                    onChange={handleInputChange} placeholder="Name of person/entity applying"
-                    className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors.applicantName ? 'border-red-500' : 'border-gray-600'}`}
-                  />
-                  {validationErrors.applicantName && <p className="text-red-400 text-xs mt-1">{validationErrors.applicantName}</p>}
+                {/* ── Primary Applicant Section ── */}
+                <div className="border border-gray-600/50 rounded-xl p-5 bg-gray-700/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-semibold text-teal-400 uppercase tracking-wider">Primary Applicant</h4>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold mb-2 text-gray-200">
+                        Applicant Name <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text" name="applicantName" value={formData.applicantName}
+                        onChange={handleInputChange} placeholder="Name of person/entity applying"
+                        className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors.applicantName ? 'border-red-500' : 'border-gray-600'}`}
+                      />
+                      {validationErrors.applicantName && <p className="text-red-400 text-xs mt-1">{validationErrors.applicantName}</p>}
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold mb-2 text-gray-200">Email Address</label>
+                        <input
+                          type="email" name="email" value={formData.email}
+                          onChange={handleInputChange} placeholder="your.email@example.com"
+                          className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors.email ? 'border-red-500' : 'border-gray-600'}`}
+                        />
+                        {validationErrors.email && <p className="text-red-400 text-xs mt-1">{validationErrors.email}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-2 text-gray-200">Phone Number</label>
+                        <input
+                          type="tel" name="phone" value={formData.phone}
+                          onChange={handleInputChange} placeholder="9999999999"
+                          className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors.phone ? 'border-red-500' : 'border-gray-600'}`}
+                        />
+                        {validationErrors.phone && <p className="text-red-400 text-xs mt-1">{validationErrors.phone}</p>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold mb-2 text-gray-200">
+                        Address <span className="text-red-400">*</span>
+                      </label>
+                      <textarea
+                        name="address" value={formData.address}
+                        onChange={handleInputChange}
+                        placeholder="Full address of the primary applicant"
+                        rows={2}
+                        className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all resize-none ${validationErrors.address ? 'border-red-500' : 'border-gray-600'}`}
+                      />
+                      {validationErrors.address && <p className="text-red-400 text-xs mt-1">{validationErrors.address}</p>}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-200">Email Address</label>
-                    <input
-                      type="email" name="email" value={formData.email}
-                      onChange={handleInputChange} placeholder="your.email@example.com"
-                      className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors.email ? 'border-red-500' : 'border-gray-600'}`}
-                    />
-                    {validationErrors.email && <p className="text-red-400 text-xs mt-1">{validationErrors.email}</p>}
+                {/* ── Additional Applicants ── */}
+                {additionalApplicants.map((applicant, index) => (
+                  <div key={index} className="border border-teal-700/40 rounded-xl p-5 bg-teal-900/10">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold text-teal-400 uppercase tracking-wider">
+                        Applicant {index + 2}
+                      </h4>
+                      <button
+                        onClick={() => removeApplicant(index)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 text-xs rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remove
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-semibold mb-2 text-gray-200">
+                          Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text" value={applicant.name}
+                          onChange={(e) => handleApplicantChange(index, 'name', e.target.value)}
+                          placeholder="Full name of applicant"
+                          className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors[`applicant_${index}_name`] ? 'border-red-500' : 'border-gray-600'}`}
+                        />
+                        {validationErrors[`applicant_${index}_name`] && (
+                          <p className="text-red-400 text-xs mt-1">{validationErrors[`applicant_${index}_name`]}</p>
+                        )}
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold mb-2 text-gray-200">Email Address</label>
+                          <input
+                            type="email" value={applicant.email}
+                            onChange={(e) => handleApplicantChange(index, 'email', e.target.value)}
+                            placeholder="email@example.com"
+                            className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors[`applicant_${index}_email`] ? 'border-red-500' : 'border-gray-600'}`}
+                          />
+                          {validationErrors[`applicant_${index}_email`] && (
+                            <p className="text-red-400 text-xs mt-1">{validationErrors[`applicant_${index}_email`]}</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold mb-2 text-gray-200">Phone Number</label>
+                          <input
+                            type="tel" value={applicant.phone}
+                            onChange={(e) => handleApplicantChange(index, 'phone', e.target.value)}
+                            placeholder="9999999999"
+                            className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors[`applicant_${index}_phone`] ? 'border-red-500' : 'border-gray-600'}`}
+                          />
+                          {validationErrors[`applicant_${index}_phone`] && (
+                            <p className="text-red-400 text-xs mt-1">{validationErrors[`applicant_${index}_phone`]}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold mb-2 text-gray-200">Address</label>
+                        <textarea
+                          value={applicant.address}
+                          onChange={(e) => handleApplicantChange(index, 'address', e.target.value)}
+                          placeholder="Full address of this applicant"
+                          rows={2}
+                          className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all resize-none"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-200">Phone Number</label>
-                    <input
-                      type="tel" name="phone" value={formData.phone}
-                      onChange={handleInputChange} placeholder="9999999999"
-                      className={`w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${validationErrors.phone ? 'border-red-500' : 'border-gray-600'}`}
-                    />
-                    {validationErrors.phone && <p className="text-red-400 text-xs mt-1">{validationErrors.phone}</p>}
-                  </div>
-                </div>
+                ))}
+
+                {/* ── Add Applicant Button ── */}
+                <button
+                  onClick={addApplicant}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-teal-600/50 hover:border-teal-500 bg-teal-900/10 hover:bg-teal-900/20 text-teal-400 hover:text-teal-300 rounded-xl transition-all duration-200 text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Another Applicant
+                </button>
 
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-gray-200">
@@ -594,6 +733,12 @@ const PatentFilingProcess = () => {
                       <span className="text-gray-400">Applicant</span>
                       <span className="text-white font-medium">{formData.applicantName}</span>
                     </div>
+                    {additionalApplicants.length > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Additional Applicants</span>
+                        <span className="text-white font-medium">{additionalApplicants.length}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -630,12 +775,29 @@ const PatentFilingProcess = () => {
                       { label: 'Applicant Name',  value: formData.applicantName },
                       { label: 'Email',           value: formData.email || '—' },
                       { label: 'Phone',           value: formData.phone || '—' },
+                      { label: 'Address',         value: formData.address || '—' },
                     ].map(({ label, value }) => (
                       <div key={label} className="flex justify-between items-start gap-4">
                         <span className="text-gray-400 flex-shrink-0">{label}</span>
                         <span className="text-white font-medium text-right">{value}</span>
                       </div>
                     ))}
+
+                    {/* Additional Applicants summary */}
+                    {additionalApplicants.length > 0 && (
+                      <div className="border-t border-gray-600 pt-3 mt-3">
+                        <p className="text-gray-400 mb-2">Additional Applicants ({additionalApplicants.length})</p>
+                        {additionalApplicants.map((a, i) => (
+                          <div key={i} className="pl-3 border-l border-teal-700/40 mb-2">
+                            <p className="text-white font-medium">{a.name}</p>
+                            {a.email && <p className="text-gray-400 text-xs">{a.email}</p>}
+                            {a.phone && <p className="text-gray-400 text-xs">{a.phone}</p>}
+                            {a.address && <p className="text-gray-400 text-xs">{a.address}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="border-t border-gray-600 pt-3">
                       <div className="flex justify-between">
                         <span className="text-gray-400">Files Attached</span>
@@ -701,7 +863,6 @@ const PatentFilingProcess = () => {
               Previous
             </button>
 
-            {/* Next button only on steps 1 & 2 */}
             {currentStep < 3 && (
               <button
                 onClick={currentStep === 1 ? handleStep1Next : handleStep2Next}

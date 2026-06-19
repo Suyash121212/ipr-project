@@ -58,6 +58,10 @@ const patentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  address:{
+    type: String,
+    required: true
+  },
 
   // Admin sets this (1–6) to control user's progress timeline
   currentStage: {
@@ -123,7 +127,13 @@ const patentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: false
-  }
+  },
+  additionalApplicants :[{
+    name: String,
+    email: String,
+    phone: String,
+    address: String
+  }],
 }, {
   timestamps: true
 });

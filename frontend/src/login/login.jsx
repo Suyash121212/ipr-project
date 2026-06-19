@@ -5,9 +5,8 @@ const backend_url = import.meta.env.VITE_BACKEND_URL;
 export default function Login() {
   const [activeTab, setActiveTab] = useState("client");
   const [adminData, setAdminData] = useState({
-    username: "",
-    password: "",
-    phone: "", // ✅ Added phone input for Twilio 2FA
+    email: '',
+    password: '',
   });
   const [otpData, setOtpData] = useState("");
   const [step, setStep] = useState(1);
@@ -16,46 +15,64 @@ export default function Login() {
   const navigate = useNavigate();
 
   // ✅ Temporary admin credentials check
-  const adminApiHandler = async (credentials) => {
-    const envUsername = import.meta.env.VITE_ADMIN_EMAIL;
-    const envPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-    if (
-      credentials.username === envUsername &&
-      credentials.password === envPassword
-    ) {
-      return { ok: true, message: "Login successful" };
-    }
-    return { ok: false, message: "Invalid username or password" };
-  };
+  // const adminApiHandler = async (credentials) => {
+  //   const envUsername = import.meta.env.VITE_ADMIN_EMAIL;
+  //   const envPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+  //   if (
+  //     credentials.username === envUsername &&
+  //     credentials.password === envPassword
+  //   ) {
+  //     return { ok: true, message: "Login successful" };
+  //   }
+  //   return { ok: false, message: "Invalid username or password" };
+  // };
 
   // ✅ Step 1: Handle Admin Login + Send Twilio OTP
   const handleAdminLogin = async (e) => {
     e.preventDefault();
+
     setError("");
     setIsLoading(true);
 
     try {
-      const result = await adminApiHandler(adminData);
-      if (result.ok) {
-        // ✅ Send OTP via backend (Twilio)
-        const res = await fetch(`${backend_url}/api/send-admin-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: adminData.phone }),
-        });
+      const loginRes = await fetch(`${backend_url}/api/admin-login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: adminData.email,
+          password: adminData.password,
+        }),
+      });
 
-        const data = await res.json();
-        if (data.success) {
-          setStep(2);
-        } else {
-          setError("Failed to send OTP. Try again.");
-        }
+      const loginData = await loginRes.json();
+
+      if (!loginData.success) {
+        setError(loginData.message);
+        return;
+      }
+
+      const otpRes = await fetch(`${backend_url}/api/send-admin-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: adminData.email,
+        }),
+      });
+
+      const otpData = await otpRes.json();
+
+      if (otpData.success) {
+        setStep(2);
       } else {
-        setError(result.message);
+        setError(otpData.message);
       }
     } catch (error) {
       console.error("Admin login error:", error);
-      setError("Something went wrong. Please check your connection.");
+      setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -64,30 +81,42 @@ export default function Login() {
   // ✅ Step 2: Handle OTP Verification (Twilio)
   const handleOtpVerify = async (e) => {
     e.preventDefault();
+
     setIsLoading(true);
     setError("");
 
     try {
       const res = await fetch(`${backend_url}/api/verify-admin-otp`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: adminData.phone, code: otpData }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: adminData.email,
+          code: otpData,
+        }),
       });
 
       const data = await res.json();
 
       if (data.success && data.isAdminAuthenticated) {
         localStorage.setItem("adminSession", "true");
+
         localStorage.setItem(
           "adminInfo",
-          JSON.stringify({ name: "Administrator", phone: adminData.phone })
+          JSON.stringify({
+            name: "Administrator",
+            email: adminData.email,
+          })
         );
+
         navigate("/admin-dashboard");
       } else {
-        setError("Invalid OTP. Please try again.");
+        setError(data.message || "Invalid OTP. Please try again.");
       }
     } catch (error) {
       console.error("OTP verify error:", error);
+
       setError("Verification failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -174,11 +203,11 @@ export default function Login() {
                     </label>
                     <input
                       type="email"
-                      value={adminData.username}
+                      value={adminData.email}
                       onChange={(e) =>
                         setAdminData({
                           ...adminData,
-                          username: e.target.value,
+                          email: e.target.value,
                         })
                       }
                       className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:border-purple-400 outline-none transition-all"
@@ -205,25 +234,6 @@ export default function Login() {
                       required
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-200 mb-2">
-                      Phone Number (with country code)
-                    </label>
-                    <input
-                      type="tel"
-                      value={adminData.phone}
-                      onChange={(e) =>
-                        setAdminData({
-                          ...adminData,
-                          phone: e.target.value,
-                        })
-                      }
-                      className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 text-white rounded-xl focus:border-purple-400 outline-none transition-all"
-                      placeholder="+91XXXXXXXXXX"
-                      required
-                    />
-                  </div>
                 </div>
 
                 {error && (
@@ -247,7 +257,7 @@ export default function Login() {
           {activeTab === "admin" && step === 2 && (
             <div className="animate-fadeIn space-y-6">
               <p className="text-slate-200 text-center">
-                A 6-digit verification code has been sent to your phone number.
+                A 6-digit verification code has been sent to your Email.
               </p>
 
               <form onSubmit={handleOtpVerify} className="space-y-4">

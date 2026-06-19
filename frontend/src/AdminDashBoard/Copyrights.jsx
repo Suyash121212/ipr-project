@@ -338,43 +338,134 @@ export default function Copyrights() {
 
               <div className="p-6 space-y-6">
 
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5 space-y-4">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Work Information</h4>
-                    <div>
-                      <p className="text-xs text-slate-500">Work Title</p>
-                      <p className="text-white font-semibold">{selectedCopyright.title}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><p className="text-xs text-slate-500">Author</p><p className="text-white text-sm">{selectedCopyright.authorName}</p></div>
-                      <div><p className="text-xs text-slate-500">Applicant</p><p className="text-white text-sm">{selectedCopyright.applicantName || 'Same as author'}</p></div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><p className="text-xs text-slate-500">Work Type</p><p className="text-white text-sm capitalize">{selectedCopyright.workType || 'Not specified'}</p></div>
-                      <div><p className="text-xs text-slate-500">Language</p><p className="text-white text-sm">{selectedCopyright.language || 'Not specified'}</p></div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-xs text-slate-500">Published</p>
-                        <p className="text-sm">{selectedCopyright.isPublished ? <span className="text-green-400">✅ Yes</span> : <span className="text-slate-400">❌ No</span>}</p>
-                      </div>
-                      {selectedCopyright.publicationDate && (
-                        <div><p className="text-xs text-slate-500">Publication Date</p><p className="text-white text-sm">{formatDate(selectedCopyright.publicationDate)}</p></div>
-                      )}
-                    </div>
-                  </div>
+               {/* Basic Info */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5 space-y-4">
+    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Work Information</h4>
+    
+    <div>
+      <p className="text-xs text-slate-500">Work Title</p>
+      <p className="text-white font-semibold">{selectedCopyright.title}</p>
+    </div>
 
-                  <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5 space-y-4">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Application Details</h4>
-                    <div><p className="text-xs text-slate-500">Application Number</p><p className="text-white font-mono text-sm">{selectedCopyright.applicationNumber || 'Not Assigned (Draft)'}</p></div>
-                    <div><p className="text-xs text-slate-500">Filing Date</p><p className="text-white text-sm">{formatDate(selectedCopyright.filingDate || selectedCopyright.createdAt)}</p></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><p className="text-xs text-slate-500">Created</p><p className="text-slate-300 text-sm">{formatDate(selectedCopyright.createdAt)}</p></div>
-                      <div><p className="text-xs text-slate-500">Updated</p><p className="text-slate-300 text-sm">{formatDate(selectedCopyright.updatedAt)}</p></div>
-                    </div>
-                  </div>
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <p className="text-xs text-slate-500">Author</p>
+        <p className="text-white text-sm">{selectedCopyright.authorName}</p>
+      </div>
+      <div>
+        <p className="text-xs text-slate-500">Primary Applicant</p>
+        <p className="text-white text-sm">{selectedCopyright.applicantName || 'Same as author'}</p>
+      </div>
+    </div>
+
+    {/* Primary applicant contact */}
+    <div className="grid grid-cols-2 gap-3">
+      {selectedCopyright.applicantEmail && (
+        <div>
+          <p className="text-xs text-slate-500">Email</p>
+          <p className="text-white text-sm break-all">{selectedCopyright.applicantEmail}</p>
+        </div>
+      )}
+      {selectedCopyright.applicantPhone && (
+        <div>
+          <p className="text-xs text-slate-500">Phone</p>
+          <p className="text-white text-sm">{selectedCopyright.applicantPhone}</p>
+        </div>
+      )}
+    </div>
+
+    {selectedCopyright.applicantAddress && (
+      <div>
+        <p className="text-xs text-slate-500">Address</p>
+        <p className="text-white text-sm">{selectedCopyright.applicantAddress}</p>
+      </div>
+    )}
+
+    {/* Additional Applicants */}
+    {selectedCopyright.additionalApplicants?.length > 0 && (
+      <div>
+        <p className="text-xs text-slate-500 mb-2">
+          Additional Applicants ({selectedCopyright.additionalApplicants.length})
+        </p>
+        <div className="space-y-2">
+          {selectedCopyright.additionalApplicants.map((applicant, index) => (
+            <div key={applicant._id || index} className="bg-slate-700/40 rounded-lg p-3">
+              <div className="grid md:grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs text-slate-500">Name</p>
+                  <p className="text-white text-sm">{applicant.name || '—'}</p>
                 </div>
+                <div>
+                  <p className="text-xs text-slate-500">Email</p>
+                  <p className="text-white text-sm break-all">{applicant.email || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Phone</p>
+                  <p className="text-white text-sm">{applicant.phone || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Address</p>
+                  <p className="text-white text-sm">{applicant.address || '—'}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <p className="text-xs text-slate-500">Work Type</p>
+        <p className="text-white text-sm capitalize">{selectedCopyright.workType || 'Not specified'}</p>
+      </div>
+      <div>
+        <p className="text-xs text-slate-500">Language</p>
+        <p className="text-white text-sm">{selectedCopyright.language || 'Not specified'}</p>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <p className="text-xs text-slate-500">Published</p>
+        <p className="text-sm">
+          {selectedCopyright.isPublished
+            ? <span className="text-green-400">✅ Yes</span>
+            : <span className="text-slate-400">❌ No</span>}
+        </p>
+      </div>
+      {selectedCopyright.publicationDate && (
+        <div>
+          <p className="text-xs text-slate-500">Publication Date</p>
+          <p className="text-white text-sm">{formatDate(selectedCopyright.publicationDate)}</p>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <div className="bg-slate-800/70 rounded-xl p-5 border border-white/5 space-y-4">
+    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Application Details</h4>
+    <div>
+      <p className="text-xs text-slate-500">Application Number</p>
+      <p className="text-white font-mono text-sm">{selectedCopyright.applicationNumber || 'Not Assigned (Draft)'}</p>
+    </div>
+    <div>
+      <p className="text-xs text-slate-500">Filing Date</p>
+      <p className="text-white text-sm">{formatDate(selectedCopyright.filingDate || selectedCopyright.createdAt)}</p>
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <p className="text-xs text-slate-500">Created</p>
+        <p className="text-slate-300 text-sm">{formatDate(selectedCopyright.createdAt)}</p>
+      </div>
+      <div>
+        <p className="text-xs text-slate-500">Updated</p>
+        <p className="text-slate-300 text-sm">{formatDate(selectedCopyright.updatedAt)}</p>
+      </div>
+    </div>
+  </div>
+</div>
 
                 {/* Description */}
                 {selectedCopyright.description && (

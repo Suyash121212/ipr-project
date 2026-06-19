@@ -8,7 +8,6 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
-const twilio = require('twilio'); // ✅ Added for Twilio 2FA
 require('dotenv').config();
 
 // Import routes
@@ -17,7 +16,7 @@ const contactRoutes = require('./routes/contact');
 const patentRoutes = require('./routes/patents');
 const consultationRoutes = require('./routes/consultations');
 const paymentRoutes = require('./routes/paymentRoutes');
-
+const otpRoutes = require('./routes/otpRoutes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -101,68 +100,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-
-// ✅ TWILIO 2FA ROUTES (NEW)
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-// Send OTP to admin phone
-app.post('/api/send-admin-otp', async (req, res) => {
-  const { phone } = req.body;
-  if (!phone) {
-    return res.status(400).json({ success: false, message: 'Phone number is required' });
-  }
-
-  try {
-    const verification = await twilioClient.verify.v2
-      .services(process.env.TWILIO_VERIFY_SID)
-      .verifications.create({ to: phone, channel: 'sms' });
-
-    console.log(`📱 OTP sent via Twilio to ${phone}`);
-    res.json({ success: true, message: 'OTP sent successfully', sid: verification.sid });
-  } catch (error) {
-    console.error('❌ Twilio send-admin-otp error:', error);
-    res.status(500).json({ success: false, message: 'Failed to send OTP' });
-  }
-});
-
-// Verify OTP code
-app.post('/api/verify-admin-otp', async (req, res) => {
-  const { phone, code } = req.body;
-  if (!phone || !code) {
-    return res.status(400).json({ success: false, message: 'Phone and OTP code are required' });
-  }
-
-  try {
-    const verification_check = await twilioClient.verify.v2
-      .services(process.env.TWILIO_VERIFY_SID)
-      .verificationChecks.create({ to: phone, code });
-
-    console.log("🔍 Twilio response:", verification_check);
-
-    // Accept both valid true OR approved status
-    if (
-      verification_check.status === 'approved' ||
-      verification_check.valid === true
-    ) {
-      console.log(`✅ OTP verified for ${phone}`);
-
-      // IMPORTANT: return login session success
-      return res.json({
-        success: true,
-        message: 'OTP verified successfully',
-        isAdminAuthenticated: true // 🔥 send session flag to frontend
-      });
-    }
-
-    return res.status(400).json({ success: false, message: 'Invalid OTP' });
-  } catch (error) {
-    console.error('❌ Twilio verify-admin-otp error:', error);
-    return res.status(500).json({ success: false, message: 'OTP verification failed' });
-  }
-});
-
-
 // API Routes
+app.use('/api', otpRoutes);
 app.use('/api/copyright', copyrightRoutes);
 app.use('/api', contactRoutes);
 app.use('/api/patents', patentRoutes);
@@ -225,7 +164,7 @@ process.on('SIGINT', gracefulShutdown('SIGINT'));
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🧩 Twilio 2FA active: /api/send-admin-otp, /api/verify-admin-otp`);
+  console.log(`📧 Email OTP active`);
 });
 
 app.get("/", (req, res) => {

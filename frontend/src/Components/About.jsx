@@ -13,15 +13,15 @@ function About() {
 
   const founders = [
     {
-      name: 'Sarah Mitchell',
+      name: 'Anjali S.',
       title: 'Managing Partner',
-      description: 'Sarah brings over 15 years of IP law experience, having previously worked at top-tier firms specializing in patent prosecution and IP strategy.',
+      description: 'Anjali brings over 15 years of IP law experience, having previously worked at top-tier firms specializing in patent prosecution and IP strategy.',
       education: 'JD from Harvard Law School, BS in Engineering'
     },
     {
-      name: 'David Chen',
+      name: 'Rajesh P.',
       title: 'Senior Partner',
-      description: 'David is a seasoned expert in trademark law and IP litigation. He has successfully represented clients in high-stakes IP disputes.',
+      description: 'Rajesh is a seasoned expert in trademark law and IP litigation. He has successfully represented clients in high-stakes IP disputes.',
       education: 'JD from Stanford Law, MBA from Wharton'
     }
   ]
