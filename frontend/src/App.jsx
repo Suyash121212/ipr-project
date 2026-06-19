@@ -9,7 +9,7 @@ import ProtectRoute from './Components/ProtectRoute'
 import About from './Components/About'
 import Insights from './Components/Insights'
 import PatentServicesPage from './Services/PatentServicesPage'
-import Consulation from './Services/Consultation'
+import Consultation from './Services/Consultation'
 import FilingRequirementsPage from './Services/FilingRequirementsPage'
 import PatentFilingProcess from './Services/PatentFilingProcess'
 import CopyrightFillingProcess from './Services/CopyrightFillingProcess'
@@ -53,8 +53,8 @@ function App() {
               element={<ProtectRoute><PatentServicesPage /></ProtectRoute>}
             />
             <Route
-              path="/consulation"
-              element={<ProtectRoute><Consulation /></ProtectRoute>}
+              path="/consultation"
+              element={<ProtectRoute><Consultation /></ProtectRoute>}
             />
             <Route path="/requirements" element={<FilingRequirementsPage />} />
             <Route
