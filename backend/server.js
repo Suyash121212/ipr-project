@@ -20,6 +20,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const otpRoutes = require("./routes/otpRoutes");
 const fileRoutes = require("./routes/files");
 const communicationRoutes = require("./routes/communications");
+const exportRoutes = require("./routes/export");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -144,6 +145,7 @@ app.use("/api/consultations", consultationLimiter, consultationRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/communications", communicationRoutes);
+app.use("/api/export", exportRoutes);
 
 // ──────────────────────────────────────────────
 // Multer error handler

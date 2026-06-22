@@ -2,6 +2,7 @@ const backend_url = import.meta.env.VITE_BACKEND_URL;
 import { useEffect, useState } from "react";
 import { FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X } from 'lucide-react';
 import CommunicationThread from '../Components/CommunicationThread';
+import ExportButton from '../Components/ExportButton';
 
 const COPYRIGHT_STAGES = [
   {
@@ -238,11 +239,12 @@ export default function Copyrights() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
         <h2 className="text-2xl font-bold text-white">Copyright Applications</h2>
-        <div className="flex space-x-2 flex-wrap gap-y-2">
+        <div className="flex space-x-2 flex-wrap gap-y-2 items-center">
           <button onClick={fetchCopyrights} disabled={isLoading}
             className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors">
             {isLoading ? '⟳ Loading...' : '🔄 Refresh'}
           </button>
+          <ExportButton type="copyrights" />
           <span className="px-3 py-1 bg-blue-600 text-blue-100 rounded-full text-sm">Total: {copyrights.length}</span>
           <span className="px-3 py-1 bg-green-600 text-green-100 rounded-full text-sm">Registered: {copyrights.filter(c => c.status === 'registered').length}</span>
           <span className="px-3 py-1 bg-yellow-600 text-yellow-100 rounded-full text-sm">Pending: {copyrights.filter(c => ['submitted', 'under-review'].includes(c.status)).length}</span>

@@ -1,5 +1,6 @@
 const backend_url = import.meta.env.VITE_BACKEND_URL;
 import { useEffect, useState } from "react";
+import ExportButton from '../Components/ExportButton';
 
 export default function ConsultationRequests() {
   const [consultationRequests, setConsultationRequests] = useState([]);
@@ -118,7 +119,7 @@ export default function ConsultationRequests() {
     <div className="p-6 mt-22 ml-65">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white">Consultation Requests</h2>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 flex-wrap gap-y-2 items-center">
           <button
             onClick={fetchConsultationRequests}
             className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
@@ -126,6 +127,7 @@ export default function ConsultationRequests() {
           >
             {isLoadingConsultations ? '⟳ Loading...' : '🔄 Refresh'}
           </button>
+          <ExportButton type="consultations" />
           <span className="px-3 py-1 bg-blue-600 text-blue-100 rounded-full text-sm">
             Total: {consultationRequests.length}
           </span>
