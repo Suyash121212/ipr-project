@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const uploadUtils = require('../middleware/upload');
+const { uploadPatents, handleMulterError } = require("../middleware/upload");
 const {
   getStats,
   getAllPatents,
@@ -11,61 +11,54 @@ const {
   getPatentById,
   updatePatent,
   deletePatent,
+  restorePatent,
   uploadTechnicalDrawings,
   uploadSupportingDocuments,
   updateCompletedDocuments,
   updateStep,
   downloadFile,
-  getCertificate
-} = require('../controllers/patentController');
+  getCertificate,
+} = require("../controllers/patentController");
 
-// ============================================
-// STATS & ADMIN
-// ============================================
-router.get('/stats/overview', getStats);
+// ── Stats & Admin ──
+router.get("/stats/overview", getStats);
 
-// ============================================
-// USER-SCOPED ROUTES  (must come before /:id)
-// ============================================
-router.get('/user/:clerkUserId/count', getUserPatentCount);
-router.get('/user/:clerkUserId/:patentId', getUserPatentById);
-router.get('/user/:clerkUserId', getUserPatents);
+// ── User-scoped (must come before /:id wildcard) ──
+router.get("/user/:clerkUserId/count", getUserPatentCount);
+router.get("/user/:clerkUserId/:patentId", getUserPatentById);
+router.get("/user/:clerkUserId", getUserPatents);
 
-// ============================================
-// COLLECTION ROUTES
-// ============================================
-router.get('/', getAllPatents);
-router.post('/', createPatent);
+// ── Collection routes ──
+router.get("/", getAllPatents);
+router.post("/", createPatent);
 
-// ============================================
-// SINGLE PATENT ROUTES
-// ============================================
-router.get('/:id', getPatentById);
-router.put('/:id', updatePatent);
-router.delete('/:id', deletePatent);
+// ── Single patent ──
+router.get("/:id", getPatentById);
+router.put("/:id", updatePatent);
+router.delete("/:id", deletePatent);
+router.patch("/:id/restore", restorePatent);
 
-// ============================================
-// FILE UPLOADS
-// ============================================
-router.post('/:id/technical-drawings', uploadUtils.upload.array('drawings', 10), uploadTechnicalDrawings);
-router.post('/:id/supporting-documents', uploadUtils.upload.array('documents', 10), uploadSupportingDocuments);
+// ── File uploads (local storage/patents/) ──
+router.post(
+  "/:id/technical-drawings",
+  uploadPatents.array("drawings", 10),
+  uploadTechnicalDrawings
+);
+router.post(
+  "/:id/supporting-documents",
+  uploadPatents.array("documents", 10),
+  uploadSupportingDocuments
+);
 
-// ============================================
-// PATCH HELPERS
-// ============================================
-router.patch('/:id/completed-documents', updateCompletedDocuments);
-router.patch('/:id/step', updateStep);
+// ── Patch helpers ──
+router.patch("/:id/completed-documents", updateCompletedDocuments);
+router.patch("/:id/step", updateStep);
 
-// ============================================
-// FILE DOWNLOAD & CERTIFICATE
-// ============================================
-router.get('/:id/download/:fileId', downloadFile);
-router.get('/:id/certificate', getCertificate);
+// ── File download & certificate ──
+router.get("/:id/download/:fileId", downloadFile);
+router.get("/:id/certificate", getCertificate);
 
-// ============================================
-// ERROR HANDLING MIDDLEWARE
-// ============================================
-router.use(uploadUtils.handleMulterError);
-
+// ── Multer error handler ──
+router.use(handleMulterError);
 
 module.exports = router;

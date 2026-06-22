@@ -23,3 +23,20 @@ dist-ssr
 *.sln
 *.sw?
 dns-test.js
+
+# Local file storage — keep folder structure but ignore uploaded files
+storage/patents/*
+storage/copyrights/*
+storage/communications/*
+storage/certificates/*
+storage/profile-images/*
+storage/temp/*
+!storage/patents/.gitkeep
+!storage/copyrights/.gitkeep
+!storage/communications/.gitkeep
+!storage/certificates/.gitkeep
+!storage/profile-images/.gitkeep
+!storage/temp/.gitkeep
+
+# Legacy uploads folder
+uploads/

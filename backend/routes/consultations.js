@@ -1,54 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Consultation = require('../models/Consultation');
+const { uploadCommunications, buildFileMeta, handleMulterError } = require('../middleware/upload');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/consultations/';
-
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-// File filter for allowed file types
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'image/jpeg',
-    'image/jpg',
-    'image/png'
-  ];
-
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed.'), false);
-  }
-};
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  },
-  fileFilter: fileFilter
-});
+// Use shared upload middleware (stores to storage/communications/)
+const upload = uploadCommunications;
 
 // @route   POST /api/consultations
 // @desc    Create a new consultation request
@@ -97,15 +55,17 @@ router.post('/', upload.array('files', 10), async (req, res) => {
       });
     }
 
-    // Process uploaded files
-    const uploadedFiles = req.files ? req.files.map(file => ({
-      fileName: file.filename,
-      originalName: file.originalname,
-      filePath: file.path,
-      fileSize: file.size,
-      mimeType: file.mimetype,
-      uploadedAt: new Date()
-    })) : [];
+    // Process uploaded files (stored in storage/communications/)
+    const uploadedFiles = req.files
+      ? req.files.map((file) => ({
+          fileName: file.filename,
+          originalName: file.originalname,
+          filePath: `storage/communications/${file.filename}`,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          uploadedAt: new Date(),
+        }))
+      : [];
 
     // Get client IP and User Agent
     const ipAddress = req.ip || req.connection.remoteAddress;
@@ -225,7 +185,7 @@ router.post('/', upload.array('files', 10), async (req, res) => {
 });
 
 // @route   GET /api/consultations/user/:clerkUserId
-// @desc    Get consultations for specific user
+// @desc    Get consultations for specific user — always shows all their own records
 // @access  Private
 router.get('/user/:clerkUserId', async (req, res) => {
   try {
@@ -233,91 +193,55 @@ router.get('/user/:clerkUserId', async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const consultations = await Consultation.find({ 
-      clerkUserId: req.params.clerkUserId 
-    })
+    // No isDeleted filter — user always sees their own consultations
+    const consultations = await Consultation.find({ clerkUserId: req.params.clerkUserId })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('-uploadedFiles -userAgent -ipAddress'); // Exclude sensitive data
+      .select('-userAgent -ipAddress');
 
-    const total = await Consultation.countDocuments({ 
-      clerkUserId: req.params.clerkUserId 
-    });
+    const total = await Consultation.countDocuments({ clerkUserId: req.params.clerkUserId });
 
     res.json({
       success: true,
       data: consultations,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
     });
   } catch (error) {
     console.error('Error fetching user consultations:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error occurred while fetching consultations'
-    });
+    res.status(500).json({ success: false, message: 'Server error occurred while fetching consultations' });
   }
 });
 
 // @route   GET /api/consultations/user/:clerkUserId/count
-// @desc    Get consultation count for user
+// @desc    Get consultation count for user — counts all their own records
 // @access  Private
 router.get('/user/:clerkUserId/count', async (req, res) => {
   try {
-    const total = await Consultation.countDocuments({ 
-      clerkUserId: req.params.clerkUserId 
-    });
+    // No isDeleted filter — user count includes soft-deleted records
+    const base = { clerkUserId: req.params.clerkUserId };
 
-    // Count by status
-    const pending = await Consultation.countDocuments({ 
-      clerkUserId: req.params.clerkUserId,
-      status: 'pending'
-    });
-    
-    const confirmed = await Consultation.countDocuments({ 
-      clerkUserId: req.params.clerkUserId,
-      status: 'confirmed'
-    });
-    
-    const completed = await Consultation.countDocuments({ 
-      clerkUserId: req.params.clerkUserId,
-      status: 'completed'
-    });
+    const [total, pending, confirmed, completed, cancelled] = await Promise.all([
+      Consultation.countDocuments(base),
+      Consultation.countDocuments({ ...base, status: 'pending' }),
+      Consultation.countDocuments({ ...base, status: 'confirmed' }),
+      Consultation.countDocuments({ ...base, status: 'completed' }),
+      Consultation.countDocuments({ ...base, status: 'cancelled' }),
+    ]);
 
-    const cancelled = await Consultation.countDocuments({ 
-      clerkUserId: req.params.clerkUserId,
-      status: 'cancelled'
-    });
-
-    res.json({
-      success: true,
-      data: {
-        total,
-        pending,
-        confirmed,
-        completed,
-        cancelled
-      }
-    });
+    res.json({ success: true, data: { total, pending, confirmed, completed, cancelled } });
   } catch (error) {
     console.error('Error fetching consultation count:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error occurred while fetching consultation count'
-    });
+    res.status(500).json({ success: false, message: 'Server error occurred while fetching consultation count' });
   }
 });
 
 // @route   GET /api/consultations/user/:clerkUserId/:consultationId
-// @desc    Get specific consultation details for user
+// @desc    Get specific consultation details for user — always accessible
 // @access  Private
 router.get('/user/:clerkUserId/:consultationId', async (req, res) => {
   try {
+    // No isDeleted filter — user can always access their own consultation detail
     const consultation = await Consultation.findOne({
       clerkUserId: req.params.clerkUserId,
       $or: [
@@ -327,27 +251,18 @@ router.get('/user/:clerkUserId/:consultationId', async (req, res) => {
     });
 
     if (!consultation) {
-      return res.status(404).json({
-        success: false,
-        message: 'Consultation not found'
-      });
+      return res.status(404).json({ success: false, message: 'Consultation not found' });
     }
 
-    res.json({
-      success: true,
-      data: consultation
-    });
+    res.json({ success: true, data: consultation });
   } catch (error) {
     console.error('Error fetching consultation details:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error occurred while fetching consultation details'
-    });
+    res.status(500).json({ success: false, message: 'Server error occurred while fetching consultation details' });
   }
 });
 
 // @route   GET /api/consultations
-// @desc    Get all consultations (Admin only)
+// @desc    Get all consultations (Admin only) — excludes soft-deleted by default
 // @access  Private
 router.get('/', async (req, res) => {
   try {
@@ -355,21 +270,12 @@ router.get('/', async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const filter = {};
+    const showDeleted = req.query.showDeleted === 'true';
+    const filter = { isDeleted: showDeleted };
 
-    // Add filters based on query parameters
-    if (req.query.status) {
-      filter.status = req.query.status;
-    }
-
-    if (req.query.workType) {
-      filter.workType = req.query.workType;
-    }
-
-    if (req.query.consultationType) {
-      filter.consultationType = req.query.consultationType;
-    }
-
+    if (req.query.status)           filter.status = req.query.status;
+    if (req.query.workType)         filter.workType = req.query.workType;
+    if (req.query.consultationType) filter.consultationType = req.query.consultationType;
     if (req.query.fromDate && req.query.toDate) {
       filter.preferredDate = {
         $gte: new Date(req.query.fromDate),
@@ -381,31 +287,23 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('-uploadedFiles -userAgent -ipAddress'); // Exclude sensitive data
+      .select('-userAgent -ipAddress');
 
     const total = await Consultation.countDocuments(filter);
 
     res.json({
       success: true,
       data: consultations,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
     });
   } catch (error) {
     console.error('Error fetching consultations:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error occurred while fetching consultations'
-    });
+    res.status(500).json({ success: false, message: 'Server error occurred while fetching consultations' });
   }
 });
 
 // @route   GET /api/consultations/:id
-// @desc    Get consultation by ID
+// @desc    Get consultation by ID — no isDeleted filter so admin modal works on deleted records
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
@@ -417,22 +315,13 @@ router.get('/:id', async (req, res) => {
     });
 
     if (!consultation) {
-      return res.status(404).json({
-        success: false,
-        message: 'Consultation not found'
-      });
+      return res.status(404).json({ success: false, message: 'Consultation not found' });
     }
 
-    res.json({
-      success: true,
-      data: consultation
-    });
+    res.json({ success: true, data: consultation });
   } catch (error) {
     console.error('Error fetching consultation:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error occurred while fetching consultation'
-    });
+    res.status(500).json({ success: false, message: 'Server error occurred while fetching consultation' });
   }
 });
 
@@ -485,11 +374,12 @@ router.put('/:id', async (req, res) => {
 });
 
 // @route   DELETE /api/consultations/:id
-// @desc    Delete consultation (Admin only)
+// @desc    Soft-delete consultation (Admin only) — record stays in DB, files kept on disk
 // @access  Private
 router.delete('/:id', async (req, res) => {
   try {
     const consultation = await Consultation.findOne({
+      isDeleted: false,
       $or: [
         { _id: req.params.id },
         { consultationId: req.params.id }
@@ -497,68 +387,77 @@ router.delete('/:id', async (req, res) => {
     });
 
     if (!consultation) {
-      return res.status(404).json({
-        success: false,
-        message: 'Consultation not found'
-      });
+      return res.status(404).json({ success: false, message: 'Consultation not found' });
     }
 
-    // Delete associated files
-    consultation.uploadedFiles.forEach(file => {
-      if (fs.existsSync(file.filePath)) {
-        fs.unlinkSync(file.filePath);
-      }
-    });
+    consultation.isDeleted = true;
+    consultation.deletedAt = new Date();
+    consultation.deletedBy = 'ADMIN';
+    await consultation.save();
 
-    await consultation.deleteOne();
-
-    res.json({
-      success: true,
-      message: 'Consultation deleted successfully'
-    });
+    res.json({ success: true, message: 'Consultation deleted successfully.' });
   } catch (error) {
     console.error('Error deleting consultation:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error occurred while deleting consultation'
+    res.status(500).json({ success: false, message: 'Server error occurred while deleting consultation' });
+  }
+});
+
+// @route   PATCH /api/consultations/:id/restore
+// @desc    Restore a soft-deleted consultation (Admin only)
+// @access  Private
+router.patch('/:id/restore', async (req, res) => {
+  try {
+    const consultation = await Consultation.findOne({
+      isDeleted: true,
+      $or: [
+        { _id: req.params.id },
+        { consultationId: req.params.id }
+      ]
     });
+
+    if (!consultation) {
+      return res.status(404).json({ success: false, message: 'Deleted consultation not found' });
+    }
+
+    consultation.isDeleted = false;
+    consultation.deletedAt = null;
+    consultation.deletedBy = null;
+    await consultation.save();
+
+    res.json({ success: true, message: 'Consultation restored successfully.', data: consultation });
+  } catch (error) {
+    console.error('Error restoring consultation:', error);
+    res.status(500).json({ success: false, message: 'Server error occurred while restoring consultation' });
   }
 });
 
 // @route   GET /api/consultations/stats/overview
-// @desc    Get consultation statistics
+// @desc    Get consultation statistics (excludes soft-deleted)
 // @access  Private
 router.get('/stats/overview', async (req, res) => {
   try {
-    const totalConsultations = await Consultation.countDocuments();
-    const pendingConsultations = await Consultation.countDocuments({ status: 'pending' });
-    const confirmedConsultations = await Consultation.countDocuments({ status: 'confirmed' });
-    const completedConsultations = await Consultation.countDocuments({ status: 'completed' });
+    const base = { isDeleted: false };
 
-    // Get consultations by work type
-    const workTypeStats = await Consultation.aggregate([
-      {
-        $group: {
-          _id: '$workType',
-          count: { $sum: 1 }
-        }
-      }
+    const [
+      totalConsultations,
+      pendingConsultations,
+      confirmedConsultations,
+      completedConsultations,
+      workTypeStats,
+      consultationTypeStats,
+    ] = await Promise.all([
+      Consultation.countDocuments(base),
+      Consultation.countDocuments({ ...base, status: 'pending' }),
+      Consultation.countDocuments({ ...base, status: 'confirmed' }),
+      Consultation.countDocuments({ ...base, status: 'completed' }),
+      Consultation.aggregate([{ $match: base }, { $group: { _id: '$workType', count: { $sum: 1 } } }]),
+      Consultation.aggregate([{ $match: base }, { $group: { _id: '$consultationType', count: { $sum: 1 } } }]),
     ]);
 
-    // Get consultations by consultation type
-    const consultationTypeStats = await Consultation.aggregate([
-      {
-        $group: {
-          _id: '$consultationType',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    // Get recent consultations (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const recentConsultations = await Consultation.countDocuments({
+      ...base,
       createdAt: { $gte: sevenDaysAgo }
     });
 
@@ -576,11 +475,11 @@ router.get('/stats/overview', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching consultation stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error occurred while fetching statistics'
-    });
+    res.status(500).json({ success: false, message: 'Server error occurred while fetching statistics' });
   }
 });
+
+// ── Multer error handler ──
+router.use(handleMulterError);
 
 module.exports = router;

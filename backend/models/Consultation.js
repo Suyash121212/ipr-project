@@ -86,7 +86,22 @@ const consultationSchema = new mongoose.Schema({
   },
   followUpDate: Date,
   estimatedCost: Number,
-  actualCost: Number
+  actualCost: Number,
+
+  // ── Soft delete ──────────────────────────────
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
+  deletedBy: {
+    type: String,
+    default: null,
+  },
 }, {
   timestamps: true
 });

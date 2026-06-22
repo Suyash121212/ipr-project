@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const uploadUtils = require('../middleware/upload');
+const { uploadCopyrights, handleMulterError } = require("../middleware/upload");
 const {
   getStats,
   getUserCopyrightCount,
@@ -11,54 +11,50 @@ const {
   getCopyrightById,
   updateCopyright,
   deleteCopyright,
+  restoreCopyright,
   uploadPrimaryFile,
   uploadSupportingDocuments,
   updateStep,
   recordPayment,
   downloadFile,
-  getCertificate
-} = require('../controllers/copyrightController');
+  getCertificate,
+} = require("../controllers/copyrightController");
 
-// ============================================
-// SPECIFIC ROUTES (before /:id wildcard routes)
-// ============================================
+// ── Specific routes (before /:id wildcard) ──
+router.get("/stats/overview", getStats);
 
-router.get('/stats/overview', getStats);
+router.get("/user/:clerkUserId/count", getUserCopyrightCount);
+router.get("/user/:clerkUserId/:copyrightId", getUserCopyrightById);
+router.get("/user/:clerkUserId", getUserCopyrights);
 
-router.get('/user/:clerkUserId/count', getUserCopyrightCount);
-router.get('/user/:clerkUserId/:copyrightId', getUserCopyrightById);
-router.get('/user/:clerkUserId', getUserCopyrights);
+// ── Generic / CRUD ──
+router.post("/", createCopyright);
+router.get("/", getAllCopyrights);
 
-// ============================================
-// GENERIC / CRUD ROUTES
-// ============================================
+router.get("/:id", getCopyrightById);
+router.put("/:id", updateCopyright);
+router.delete("/:id", deleteCopyright);
+router.patch("/:id/restore", restoreCopyright);
 
-router.post('/', createCopyright);
-router.get('/', getAllCopyrights);
+// ── File upload routes (local storage/copyrights/) ──
+router.post(
+  "/:id/primary-file",
+  uploadCopyrights.single("primary"),
+  uploadPrimaryFile
+);
+router.post(
+  "/:id/supporting-documents",
+  uploadCopyrights.array("documents", 10),
+  uploadSupportingDocuments
+);
 
-router.get('/:id', getCopyrightById);
-router.put('/:id', updateCopyright);
-router.delete('/:id', deleteCopyright);
+// ── Misc routes ──
+router.patch("/:id/step", updateStep);
+router.post("/:id/payment", recordPayment);
+router.get("/:id/download/:fileId", downloadFile);
+router.get("/:id/certificate", getCertificate);
 
-// ============================================
-// FILE UPLOAD ROUTES
-// ============================================
-
-router.post('/:id/primary-file', uploadUtils.upload.single('primary'), uploadPrimaryFile);
-router.post('/:id/supporting-documents', uploadUtils.upload.array('documents', 10), uploadSupportingDocuments);
-
-router.use(uploadUtils.handleMulterError);
-
-// ============================================
-// MISC ROUTES
-// ============================================
-
-router.patch('/:id/step', updateStep);
-router.post('/:id/payment', recordPayment);
-router.get('/:id/download/:fileId', downloadFile);
-router.get('/:id/certificate', getCertificate);
-
-// DOWNload 
-router.get('/:id/download/:fileId', downloadFile); 
+// ── Multer error handler ──
+router.use(handleMulterError);
 
 module.exports = router;

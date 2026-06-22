@@ -33,9 +33,19 @@ export default function ConsultationRequests() {
   };
 
   // Consultation handler functions
-  const handleViewConsultation = (consultation) => {
+  const handleViewConsultation = async (consultation) => {
+    // Show immediately with list data, then refresh to get uploadedFiles
     setSelectedConsultation(consultation);
     setShowConsultationModal(true);
+    try {
+      const res = await fetch(`${backend_url}/api/consultations/${consultation._id}`);
+      const result = await res.json();
+      if (result.success && result.data) {
+        setSelectedConsultation(result.data);
+      }
+    } catch {
+      /* keep cached */
+    }
   };
 
   const handleUpdateConsultationStatus = async (id, status) => {
@@ -288,21 +298,43 @@ export default function ConsultationRequests() {
                 <p className="text-white bg-slate-700 p-3 rounded mt-1">{selectedConsultation.description}</p>
               </div>
               
-              {selectedConsultation.uploadedFiles && selectedConsultation.uploadedFiles.length > 0 && (
+                      {selectedConsultation.uploadedFiles && selectedConsultation.uploadedFiles.length > 0 && (
                 <div>
-                  <label className="text-slate-400 text-sm">Uploaded Files</label>
+                  <label className="text-slate-400 text-sm">Uploaded Files ({selectedConsultation.uploadedFiles.length})</label>
                   <div className="mt-1 space-y-2">
                     {selectedConsultation.uploadedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-slate-700 p-3 rounded">
-                        <span className="text-white text-sm">{file.originalName}</span>
-                        <a
-                          href={`${backend_url}/uploads/consultations/${file.fileName}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-sm"
-                        >
-                          Download
-                        </a>
+                      <div key={file._id || index} className="flex items-center justify-between bg-slate-700 p-3 rounded">
+                        <div className="flex-1 min-w-0 mr-3">
+                          <p className="text-white text-sm truncate">{file.originalName || file.fileName}</p>
+                          {(file.fileSize || file.size) && (
+                            <p className="text-slate-500 text-xs">
+                              {(file.fileSize || file.size) < 1024 * 1024
+                                ? `${((file.fileSize || file.size) / 1024).toFixed(1)} KB`
+                                : `${((file.fileSize || file.size) / 1024 / 1024).toFixed(2)} MB`}
+                            </p>
+                          )}
+                        </div>
+                        {file._id && (
+                          <div className="flex gap-2 flex-shrink-0">
+                            <a
+                              href={`${backend_url}/api/files/view/${file._id}?isAdmin=true`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-400 hover:text-green-300 text-sm px-2 py-1 bg-green-500/10 rounded transition-colors"
+                              title="View inline"
+                            >
+                              View
+                            </a>
+                            <a
+                              href={`${backend_url}/api/files/download/${file._id}?isAdmin=true`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 text-sm px-2 py-1 bg-blue-500/20 rounded transition-colors"
+                            >
+                              Download
+                            </a>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

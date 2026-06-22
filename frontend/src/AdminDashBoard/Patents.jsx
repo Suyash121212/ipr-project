@@ -1,6 +1,7 @@
 const backend_url = import.meta.env.VITE_BACKEND_URL;
 import { useEffect, useState } from 'react';
 import { FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X, Eye, Download } from 'lucide-react';
+import CommunicationThread from '../Components/CommunicationThread';
 
 const PATENT_STAGES = [
   {
@@ -59,6 +60,7 @@ export default function Patents() {
   const [error, setError] = useState(null);
   const [stageUpdating, setStageUpdating] = useState(false);
   const [stageUpdateSuccess, setStageUpdateSuccess] = useState(null);
+  const [modalTab, setModalTab] = useState('details');
 
   useEffect(() => { fetchPatents(); }, []);
 
@@ -91,6 +93,7 @@ export default function Patents() {
     setShowModal(false);
     setSelectedPatent(null);
     setStageUpdateSuccess(null);
+    setModalTab('details');
   };
 
   const handleUpdateStatus = async (id, status) => {
@@ -237,56 +240,32 @@ export default function Patents() {
 
 
   const handleViewFile = (file) => {
-    if (!file?.cloudinaryUrl) {
+    if (!file?._id) {
       alert("File not available");
       return;
     }
-
+    const viewUrl = `${backend_url}/api/files/view/${file._id}?isAdmin=true`;
     const extension = file.originalName?.split(".").pop()?.toLowerCase();
 
-    if (extension === "pdf") {
-      window.open(file.cloudinaryUrl, "_blank");
-    } else if (["doc", "docx"].includes(extension)) {
+    if (["doc", "docx"].includes(extension)) {
       window.open(
-        `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
-          file.cloudinaryUrl
-        )}`,
+        `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(viewUrl)}`,
         "_blank"
       );
     } else {
-      window.open(file.cloudinaryUrl, "_blank");
+      window.open(viewUrl, "_blank");
     }
   };
 
   const handleDownloadFile = (patent, file) => {
-    if (file?._id) {
-      window.open(
-        `${backend_url}/api/patents/${patent._id}/download/${file._id}`,
-        "_blank"
-      );
-    } else {
+    if (!file?._id) {
       alert("File not available for download");
-    } const handleDownloadFile = async (file) => {
-      try {
-        const response = await fetch(file.cloudinaryUrl);
-        const blob = await response.blob();
-
-        const blobUrl = window.URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = file.originalName || file.filename;
-
-        document.body.appendChild(link);
-        link.click();
-
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-
-      } catch (error) {
-        console.error("Download failed:", error);
-      }
-    };
+      return;
+    }
+    window.open(
+      `${backend_url}/api/files/download/${file._id}?isAdmin=true`,
+      "_blank"
+    );
   };
 
   if (error) return (
@@ -367,7 +346,6 @@ export default function Patents() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button onClick={() => handleViewPatent(patent)} className="text-blue-400 hover:text-blue-300">View</button>
-                        <button onClick={() => { const f = patent.supportingDocuments?.[0] || patent.technicalDrawings?.[0]; handleDownloadFile(file); }} className="text-green-400 hover:text-green-300">Download</button>
                         <button onClick={() => handleDeletePatent(patent._id)} className="text-red-400 hover:text-red-300">Delete</button>
                       </td>
                     </tr>
@@ -396,23 +374,46 @@ export default function Patents() {
             <div className="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto border border-white/10 shadow-2xl">
 
               {/* Header */}
-              <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 flex justify-between items-center z-10">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-2xl">🔬</span>
-                  <div className="min-w-0">
-                    <h3 className="text-lg font-bold text-white truncate">{selectedPatent.inventionTitle}</h3>
-                    <p className="text-slate-400 text-xs">App No: {selectedPatent.applicationNumber || 'Not Assigned'}</p>
+              <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 z-10">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-2xl">🔬</span>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-bold text-white truncate">{selectedPatent.inventionTitle}</h3>
+                      <p className="text-slate-400 text-xs">App No: {selectedPatent.applicationNumber || 'Not Assigned'}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 text-xs rounded-full flex-shrink-0 ${getStatusColor(selectedPatent.status || 'draft')}`}>
+                      {getStatusIcon(selectedPatent.status || 'draft')} {(selectedPatent.status || 'draft').replace('-', ' ')}
+                    </span>
                   </div>
-                  <span className={`px-2.5 py-1 text-xs rounded-full flex-shrink-0 ${getStatusColor(selectedPatent.status || 'draft')}`}>
-                    {getStatusIcon(selectedPatent.status || 'draft')} {(selectedPatent.status || 'draft').replace('-', ' ')}
-                  </span>
+                  <button onClick={handleCloseModal}
+                    className="text-slate-400 hover:text-white w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors ml-3 flex-shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <button onClick={handleCloseModal}
-                  className="text-slate-400 hover:text-white w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors ml-3 flex-shrink-0">
-                  <X className="w-4 h-4" />
-                </button>
+                {/* Tab bar */}
+                <div className="flex gap-1 mt-3">
+                  {[
+                    { id: 'details', label: 'Details' },
+                    { id: 'communication', label: '💬 Communication' },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setModalTab(tab.id)}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        modalTab === tab.id
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-400 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
+              {/* ── Details tab ── */}
+              {modalTab === 'details' && (
               <div className="p-6 space-y-6">
 
                 {/* Basic Info */}
@@ -802,6 +803,21 @@ export default function Patents() {
                 </div>
 
               </div>
+              )} {/* end details tab */}
+
+              {/* ── Communication tab ── */}
+              {modalTab === 'communication' && (
+                <div className="p-4">
+                  <CommunicationThread
+                    applicationId={selectedPatent._id}
+                    applicationType="PATENT"
+                    clerkUserId={null}
+                    isAdmin={true}
+                    senderName="Admin"
+                  />
+                </div>
+              )}
+
             </div>
           </div>
         );

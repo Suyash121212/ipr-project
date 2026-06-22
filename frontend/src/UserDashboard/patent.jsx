@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from "@clerk/clerk-react";
-import { Download, FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X, Eye } from 'lucide-react';
+import { Download, FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X, Eye, MessageSquare } from 'lucide-react';
+import CommunicationThread from '../Components/CommunicationThread';
 const backend_url = import.meta.env.VITE_BACKEND_URL;
 
 const PATENT_STAGES = [
@@ -43,6 +44,7 @@ export default function UserPatents() {
   const [error, setError] = useState(null);
   const [selectedPatent, setSelectedPatent] = useState(null); // null = modal closed
   const [modalLoading, setModalLoading] = useState(false);
+  const [modalTab, setModalTab] = useState('details'); // 'details' | 'communication'
 
   const fetchPatents = async () => {
     if (!user) return;
@@ -80,7 +82,7 @@ export default function UserPatents() {
     }
   };
 
-  const closeModal = () => setSelectedPatent(null);
+  const closeModal = () => { setSelectedPatent(null); setModalTab('details'); }
 
   const getStageFromPatent = (patent) => {
     if (patent?.currentStage && typeof patent.currentStage === 'number') return patent.currentStage;
@@ -142,28 +144,26 @@ export default function UserPatents() {
     } catch { alert('Error deleting patent application'); }
   };
 
-  const handleDownload = async (url, filename) => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-
-      const blobUrl = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename;
-
-      document.body.appendChild(link);
-      link.click();
-
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Download failed:", error);
+  const handleDownload = (file) => {
+    if (!file?._id) {
+      alert("File not available for download");
+      return;
     }
+    const clerkUserId = user?.id || "";
+    window.open(
+      `${backend_url}/api/files/download/${file._id}?clerkUserId=${encodeURIComponent(clerkUserId)}`,
+      "_blank"
+    );
   };
 
   const handleView = (file) => {
+    if (!file?._id) {
+      alert("File not available for preview");
+      return;
+    }
+    const clerkUserId = user?.id || "";
+    const viewUrl = `${backend_url}/api/files/view/${file._id}?clerkUserId=${encodeURIComponent(clerkUserId)}`;
+
     const isDocx =
       file.mimetype?.includes(
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -171,11 +171,11 @@ export default function UserPatents() {
 
     if (isDocx) {
       window.open(
-        `https://docs.google.com/gview?embedded=true&url=${file.cloudinaryUrl}`,
+        `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(viewUrl)}`,
         "_blank"
       );
     } else {
-      window.open(file.cloudinaryUrl, "_blank");
+      window.open(viewUrl, "_blank");
     }
   };
   // ── Loading / Error ──
@@ -335,23 +335,46 @@ export default function UserPatents() {
           <div className="bg-slate-900 rounded-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto border border-white/10 shadow-2xl">
 
             {/* Header */}
-            <div className="sticky top-0 bg-slate-900/98 backdrop-blur-sm border-b border-white/10 px-6 py-4 flex justify-between items-center z-10">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="text-xl">🔬</span>
-                <div className="min-w-0">
-                  <h3 className="text-base font-bold text-white truncate">{selectedPatent.inventionTitle}</h3>
-                  <p className="text-slate-400 text-xs">App No: {selectedPatent.applicationNumber || 'Pending Assignment'}</p>
+            <div className="sticky top-0 bg-slate-900/98 backdrop-blur-sm border-b border-white/10 px-6 py-4 z-10">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xl">🔬</span>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-white truncate">{selectedPatent.inventionTitle}</h3>
+                    <p className="text-slate-400 text-xs">App No: {selectedPatent.applicationNumber || 'Pending Assignment'}</p>
+                  </div>
+                  <span className={`px-2.5 py-1 text-xs rounded-full border flex-shrink-0 ${getStatusBadge(selectedPatent.status).color}`}>
+                    {getStatusBadge(selectedPatent.status).label}
+                  </span>
                 </div>
-                <span className={`px-2.5 py-1 text-xs rounded-full border flex-shrink-0 ${getStatusBadge(selectedPatent.status).color}`}>
-                  {getStatusBadge(selectedPatent.status).label}
-                </span>
+                <button onClick={closeModal}
+                  className="text-slate-400 hover:text-white w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors ml-3 flex-shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button onClick={closeModal}
-                className="text-slate-400 hover:text-white w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors ml-3 flex-shrink-0">
-                <X className="w-4 h-4" />
-              </button>
+              {/* Tab bar */}
+              <div className="flex gap-1 mt-3">
+                {[
+                  { id: 'details', label: 'Details' },
+                  { id: 'communication', label: '💬 Communication', icon: MessageSquare },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setModalTab(tab.id)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      modalTab === tab.id
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-slate-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* ── Details tab ── */}
+            {modalTab === 'details' && (
             <div className="p-6 space-y-5">
 
               {/* Fetching indicator */}
@@ -498,12 +521,7 @@ export default function UserPatents() {
                               </button>
 
                               <button
-                                onClick={() =>
-                                  handleDownload(
-                                    file.cloudinaryUrl,
-                                    file.originalName
-                                  )
-                                }
+                                onClick={() => handleDownload(file)}
                                 className="text-blue-400 hover:text-blue-300 p-1"
                                 title="Download Document"
                               >
@@ -536,12 +554,7 @@ export default function UserPatents() {
                               </button>
 
                               <button
-                                onClick={() =>
-                                  handleDownload(
-                                    file.cloudinaryUrl,
-                                    file.originalName
-                                  )
-                                }
+                                onClick={() => handleDownload(file)}
                                 className="text-blue-400 hover:text-blue-300 p-1"
                                 title="Download Document"
                               >
@@ -650,6 +663,21 @@ export default function UserPatents() {
                 </div>
               )}
             </div>
+            )} {/* end details tab */}
+
+            {/* ── Communication tab ── */}
+            {modalTab === 'communication' && (
+              <div className="p-4">
+                <CommunicationThread
+                  applicationId={selectedPatent._id}
+                  applicationType="PATENT"
+                  clerkUserId={user?.id}
+                  isAdmin={false}
+                  senderName={selectedPatent.applicantName || user?.fullName || 'Applicant'}
+                />
+              </div>
+            )}
+
           </div>
         </div>
       )}

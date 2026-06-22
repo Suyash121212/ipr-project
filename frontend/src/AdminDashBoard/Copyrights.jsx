@@ -1,6 +1,7 @@
 const backend_url = import.meta.env.VITE_BACKEND_URL;
 import { useEffect, useState } from "react";
 import { FileText, CheckCircle, Clock, Award, BookOpen, RefreshCw, ChevronRight, X } from 'lucide-react';
+import CommunicationThread from '../Components/CommunicationThread';
 
 const COPYRIGHT_STAGES = [
   {
@@ -58,6 +59,7 @@ export default function Copyrights() {
   const [error, setError] = useState(null);
   const [stageUpdating, setStageUpdating] = useState(false);
   const [stageUpdateSuccess, setStageUpdateSuccess] = useState(null);
+  const [modalTab, setModalTab] = useState('details');
 
   useEffect(() => { fetchCopyrights(); }, []);
 
@@ -106,6 +108,7 @@ export default function Copyrights() {
     setShowModal(false);
     setSelectedCopyright(null);
     setStageUpdateSuccess(null);
+    setModalTab('details');
   };
 
   const handleUpdateStatus = async (id, status) => {
@@ -319,23 +322,46 @@ export default function Copyrights() {
             <div className="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto border border-white/10 shadow-2xl">
 
               {/* Modal Header */}
-              <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 flex justify-between items-center z-10">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-2xl">©️</span>
-                  <div className="min-w-0">
-                    <h3 className="text-lg font-bold text-white truncate">{selectedCopyright.title}</h3>
-                    <p className="text-slate-400 text-xs">App No: {selectedCopyright.applicationNumber || 'Not Assigned'}</p>
+              <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 z-10">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-2xl">©️</span>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-bold text-white truncate">{selectedCopyright.title}</h3>
+                      <p className="text-slate-400 text-xs">App No: {selectedCopyright.applicationNumber || 'Not Assigned'}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 text-xs rounded-full flex-shrink-0 ${getStatusColor(selectedCopyright.status || 'draft')}`}>
+                      {getStatusIcon(selectedCopyright.status || 'draft')} {(selectedCopyright.status || 'draft').replace(/-/g, ' ')}
+                    </span>
                   </div>
-                  <span className={`px-2.5 py-1 text-xs rounded-full flex-shrink-0 ${getStatusColor(selectedCopyright.status || 'draft')}`}>
-                    {getStatusIcon(selectedCopyright.status || 'draft')} {(selectedCopyright.status || 'draft').replace(/-/g, ' ')}
-                  </span>
+                  <button onClick={handleCloseModal}
+                    className="text-slate-400 hover:text-white w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors ml-3 flex-shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <button onClick={handleCloseModal}
-                  className="text-slate-400 hover:text-white w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors ml-3 flex-shrink-0">
-                  <X className="w-4 h-4" />
-                </button>
+                {/* Tab bar */}
+                <div className="flex gap-1 mt-3">
+                  {[
+                    { id: 'details', label: 'Details' },
+                    { id: 'communication', label: '💬 Communication' },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setModalTab(tab.id)}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        modalTab === tab.id
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-400 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
+              {/* ── Details tab ── */}
+              {modalTab === 'details' && (
               <div className="p-6 space-y-6">
 
                {/* Basic Info */}
@@ -489,7 +515,10 @@ export default function Copyrights() {
                               <p className="text-slate-500 text-xs">{(file.size / 1024 / 1024).toFixed(2)} MB • {file.mimetype}</p>
                             </div>
                           </div>
-                          <a href={`${backend_url}/${file.path}`} target="_blank" rel="noopener noreferrer"
+                          <a
+                            href={`${backend_url}/api/files/download/${file._id}?isAdmin=true`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 bg-blue-500/20 rounded transition-colors">
                             Download
                           </a>
@@ -672,6 +701,21 @@ export default function Copyrights() {
                 </div>
 
               </div>
+              )} {/* end details tab */}
+
+              {/* ── Communication tab ── */}
+              {modalTab === 'communication' && (
+                <div className="p-4">
+                  <CommunicationThread
+                    applicationId={selectedCopyright._id}
+                    applicationType="COPYRIGHT"
+                    clerkUserId={null}
+                    isAdmin={true}
+                    senderName="Admin"
+                  />
+                </div>
+              )}
+
             </div>
           </div>
         );

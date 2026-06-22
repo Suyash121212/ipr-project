@@ -196,8 +196,6 @@ export default function UserDashboard() {
             {activeTab === 'consultations' && (
               <DashboardConsultation 
                 consultations={dashboardData.consultations}
-                handleView={handleView}
-                handleDelete={handleDelete}
               />
             )}
           </>

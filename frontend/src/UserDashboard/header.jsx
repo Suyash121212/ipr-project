@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Home, RefreshCw, User, Calendar, Clock } from "lucide-react";
+import NotificationBell from "../Components/NotificationBell";
 
 export default function DashboardHeader({ user, fetchUserData }) {
   const navigate = useNavigate();
@@ -104,6 +105,9 @@ export default function DashboardHeader({ user, fetchUserData }) {
           </div>
           
          
+
+            {/* Notification Bell */}
+            <NotificationBell clerkUserId={user?.id} />
 
             {/* Home Button */}
             <button
