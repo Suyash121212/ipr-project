@@ -135,11 +135,6 @@ router.post('/send-admin-otp', async (req, res) => {
 // Verify OTP
 // =======================
 router.post('/verify-admin-otp', async (req, res) => {
-   return res.json({
-      success: true,
-      isAdminAuthenticated: true,
-      message: 'OTP verified successfully',
-    });
   try {
     const { email, code } = req.body;
 
