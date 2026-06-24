@@ -1,79 +1,114 @@
-const express = require('express');
-const nodemailer = require('nodemailer');
+const express = require("express");
+const nodemailer = require("nodemailer");
+const rateLimit = require("express-rate-limit");
+const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 
-// Temporary OTP storage
-// Use Redis or MongoDB in production
+// In-memory OTP storage
 const otpStore = new Map();
 
-// Email transporter
+// =======================
+// Cleanup Expired OTPs
+// =======================
+setInterval(() => {
+  const now = Date.now();
+
+  for (const [email, data] of otpStore.entries()) {
+    if (data.expiresAt < now) {
+      otpStore.delete(email);
+    }
+  }
+}, 60 * 1000);
+
+// =======================
+// Rate Limiter
+// =======================
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    success: false,
+    message: "Too many OTP requests. Please try again later.",
+  },
+});
+
+// =======================
+// Email Transporter
+// =======================
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
     user: process.env.ADMIN_EMAIL,
     pass: process.env.EMAIL_PASS,
   },
 });
 
-// Verify transporter on server start
 transporter.verify((error) => {
   if (error) {
-    console.error('❌ Email configuration error:', error);
+    console.error("❌ Email configuration error:", error);
   } else {
-    console.log('📧 Email service ready');
+    console.log("📧 Email service ready");
   }
 });
 
 // =======================
-// Admin Login Validation
+// Step 1: Verify Email & Password
 // =======================
-router.post('/admin-login', async (req, res) => {
+router.post("/admin-login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required',
+        message: "Email and password are required",
       });
     }
 
     if (
-      email === process.env.ADMIN_EMAIL &&
-      password === process.env.ADMIN_PASSWORD
+      email !== process.env.ADMIN_EMAIL ||
+      password !== process.env.ADMIN_PASSWORD
     ) {
-      return res.json({
-        success: true,
-        message: 'Credentials verified',
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
       });
     }
 
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid email or password',
+    return res.json({
+      success: true,
+      message: "Credentials verified",
     });
   } catch (error) {
-    console.error('❌ Admin login error:', error);
+    console.error("❌ Admin login error:", error);
 
     return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
     });
   }
 });
 
 // =======================
-// Send Email OTP
+// Step 2: Send OTP
 // =======================
-router.post('/send-admin-otp', async (req, res) => {
+router.post("/send-admin-otp", otpLimiter, async (req, res) => {
   try {
     const { email } = req.body;
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: 'Email is required',
+        message: "Email is required",
+      });
+    }
+
+    // Only admin email allowed
+    if (email !== process.env.ADMIN_EMAIL) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized email",
       });
     }
 
@@ -83,34 +118,32 @@ router.post('/send-admin-otp', async (req, res) => {
 
     otpStore.set(email, {
       otp,
+      attempts: 0,
       expiresAt: Date.now() + 5 * 60 * 1000,
     });
 
     await transporter.sendMail({
       from: `"IPR Admin" <${process.env.ADMIN_EMAIL}>`,
       to: email,
-      subject: 'Admin Login OTP',
+      subject: "Admin Login OTP",
       html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <div style="font-family: Arial, sans-serif;">
           <h2>Admin Verification Code</h2>
 
           <p>Your OTP is:</p>
 
           <div
             style="
-              font-size: 32px;
-              font-weight: bold;
-              letter-spacing: 8px;
-              color: #4f46e5;
-              margin: 20px 0;
+              font-size:32px;
+              font-weight:bold;
+              color:#4f46e5;
+              letter-spacing:8px;
             "
           >
             ${otp}
           </div>
 
-          <p>This code will expire in 5 minutes.</p>
-
-          <p>If you did not request this code, please ignore this email.</p>
+          <p>This code expires in 5 minutes.</p>
         </div>
       `,
     });
@@ -119,29 +152,29 @@ router.post('/send-admin-otp', async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'OTP sent successfully',
+      message: "OTP sent successfully",
     });
   } catch (error) {
-    console.error('❌ Email OTP error:', error);
+    console.error("❌ Send OTP error:", error);
 
     return res.status(500).json({
       success: false,
-      message: 'Failed to send OTP',
+      message: "Failed to send OTP",
     });
   }
 });
 
 // =======================
-// Verify OTP
+// Step 3: Verify OTP
 // =======================
-router.post('/verify-admin-otp', async (req, res) => {
+router.post("/verify-admin-otp", async (req, res) => {
   try {
     const { email, code } = req.body;
 
     if (!email || !code) {
       return res.status(400).json({
         success: false,
-        message: 'Email and OTP are required',
+        message: "Email and OTP are required",
       });
     }
 
@@ -150,7 +183,7 @@ router.post('/verify-admin-otp', async (req, res) => {
     if (!storedOtp) {
       return res.status(400).json({
         success: false,
-        message: 'OTP not found',
+        message: "OTP not found",
       });
     }
 
@@ -159,32 +192,57 @@ router.post('/verify-admin-otp', async (req, res) => {
 
       return res.status(400).json({
         success: false,
-        message: 'OTP expired',
+        message: "OTP expired",
       });
     }
 
     if (storedOtp.otp !== code) {
+      storedOtp.attempts += 1;
+
+      if (storedOtp.attempts >= 5) {
+        otpStore.delete(email);
+
+        return res.status(400).json({
+          success: false,
+          message: "Too many invalid attempts. Request a new OTP.",
+        });
+      }
+
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP',
+        message: `Invalid OTP. Remaining attempts: ${
+          5 - storedOtp.attempts
+        }`,
       });
     }
 
+    // OTP Verified
     otpStore.delete(email);
 
-    console.log(`✅ OTP verified for ${email}`);
+    const token = jwt.sign(
+      {
+        email,
+        role: "admin",
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "8h",
+      }
+    );
+
+    console.log(`✅ Admin authenticated: ${email}`);
 
     return res.json({
       success: true,
-      isAdminAuthenticated: true,
-      message: 'OTP verified successfully',
+      token,
+      message: "OTP verified successfully",
     });
   } catch (error) {
-    console.error('❌ OTP verification error:', error);
+    console.error("❌ OTP verification error:", error);
 
     return res.status(500).json({
       success: false,
-      message: 'OTP verification failed',
+      message: "OTP verification failed",
     });
   }
 });

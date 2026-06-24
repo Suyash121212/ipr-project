@@ -78,7 +78,7 @@ export default function Login() {
     }
   };
 
-  // ✅ Step 2: Handle OTP Verification (Twilio)
+  // ✅ Step 2: Handle OTP Verification
   const handleOtpVerify = async (e) => {
     e.preventDefault();
 
@@ -99,9 +99,11 @@ export default function Login() {
 
       const data = await res.json();
 
-      if (data.success && data.isAdminAuthenticated) {
+      // Backend returns { success: true, token, message }
+      if (data.success && data.token) {
+        // Store the JWT token so admin API calls can include it
+        localStorage.setItem("adminToken", data.token);
         localStorage.setItem("adminSession", "true");
-
         localStorage.setItem(
           "adminInfo",
           JSON.stringify({
@@ -116,7 +118,6 @@ export default function Login() {
       }
     } catch (error) {
       console.error("OTP verify error:", error);
-
       setError("Verification failed. Please try again.");
     } finally {
       setIsLoading(false);
