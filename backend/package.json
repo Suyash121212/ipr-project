@@ -21,7 +21,7 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
-    "bcryptjs": "^3.0.3",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "exceljs": "^4.4.0",
@@ -37,7 +37,9 @@
     "multer": "^2.2.0",
     "nodemailer": "^6.10.1",
     "path-to-regexp": "^0.1.12",
+    "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
+    "speakeasy": "^2.0.0",
     "uuid": "^11.1.0",
     "validator": "^13.15.23"
   },

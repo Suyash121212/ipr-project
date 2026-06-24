@@ -75,7 +75,7 @@ function About() {
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">About IPSecure Legal</h1>
           <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-            Leading the way in intellectual property protection, innovation, and empowering connections in our client's success.
+            Vighnaharta TechFabrica Innovations LLP, Pune is MSME registered enterprise having LLPIN:ACK-7462 and Udyam registration: UDYAM-MH-01-0210491. VTFI LLP is a forward-looking intellectual property and technology consultancy that empowers innovators, researchers, entrepreneurs, and institutions to protect, commercialize, and scale their ideas. With a core focus on Patent, Trademark and Copyright consulting, innovation management, and technology-driven solutions, the LLP has established itself as a trusted partner for hundreds of innovators across India.
           </p>
         </div>
       </div>
@@ -105,15 +105,18 @@ function About() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold mb-6">Our Story</h2>
+              <h2 className="text-3xl font-bold mb-6">Our Details</h2>
               <p className="text-gray-300 mb-6">
-                Founded in 2019, IPSecure Legal emerged from a vision to provide world-class intellectual property protection services to innovators and businesses of all sizes. Our founders recognized the growing need for sophisticated IP strategies in an increasingly complex global marketplace.
+                VTFI registration details:
               </p>
               <p className="text-gray-300 mb-6">
-                What started as a boutique firm with three attorneys has grown into a leading IP practice with over 50 legal professionals. We've maintained our commitment to personalized service while expanding our capabilities to serve clients across multiple industries and jurisdictions.
+                MSME registered entrprise.
               </p>
               <p className="text-gray-300">
-                Today, we're proud to be trusted advisors to startups, Fortune 500 companies, universities, and individual inventors. Our success is measured not just by our legal victories, but by the long-term success we've helped our clients achieve through strategic IP protection.
+                LLP identification number: ACK-7462
+              </p>
+              <p className="text-gray-300">
+                Udyam registration: UDYAM-MH-01-0210491
               </p>
             </div>
             <div className="bg-gray-700 rounded-lg h-96 flex items-center justify-center">
@@ -133,13 +136,20 @@ function About() {
             <div className="bg-gray-800 p-8 rounded-lg">
               <h3 className="text-xl font-bold mb-4 text-teal-400">Our Mission</h3>
               <p className="text-gray-300">
-                To protect and maximize the value of our clients' intellectual property through expert legal counsel, innovative strategies, and unwavering dedication to their success.
+                To provide end-to-end Patent, Trademark and Copyright consultancy services including search, drafting, filing, publication, and grant support.  
+
+                To act as a growth catalyst for startups and researchers, by connecting technical creativity with IP law and business opportunities.  
+
+                To create an ecosystem of innovation and entrepreneurship, where academic research is not just published but also protected and commercialized.  
+
+                To simplify complex legal and technical processes with the help of expert patent agents and consultants
               </p>
             </div>
             <div className="bg-gray-800 p-8 rounded-lg">
               <h3 className="text-xl font-bold mb-4 text-blue-400">Our Vision</h3>
               <p className="text-gray-300">
-                To be the global leader in intellectual property law, fostering innovation and creativity while building lasting partnerships with clients worldwide.
+                 To democratize innovation and make intellectual property (IP) protection accessible, affordable, and impactful for every researcher, innovator, and entrepreneur.
+                 We envision a future where every idea is safeguarded and transformed into a global asset, enabling innovators to lead with confidence in a knowledge-driven economy. 
               </p>
             </div>
             <div className="bg-gray-800 p-8 rounded-lg">
@@ -152,7 +162,7 @@ function About() {
         </div>
       </div>
 
-      {/* Meet Our Founders */}
+      {/* Meet Our Founders
       <div className="py-20 bg-gray-800">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
@@ -177,10 +187,10 @@ function About() {
             ))}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Our Expert Team */}
-      <div className="py-20 bg-gray-900">
+      {/* <div className="py-20 bg-gray-900">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Our Expert Team</h2>
@@ -200,38 +210,10 @@ function About() {
             ))}
           </div>
         </div>
-      </div>
+      </div> */}
 
-      {/* Our Journey Timeline */}
-      <div className="py-20 bg-gray-800">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Our Journey</h2>
-            <p className="text-gray-300">Key milestones in our growth and success</p>
-          </div>
-          
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-teal-500 to-blue-500"></div>
-            
-            <div className="space-y-8">
-              {timeline.map((item, index) => (
-                <div key={index} className="relative flex items-start space-x-8">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-teal-600 rounded-full flex items-center justify-center relative z-10">
-                      <span className="text-white font-bold">{item.year}</span>
-                    </div>
-                  </div>
-                  <div className="flex-grow bg-gray-700 p-6 rounded-lg">
-                    <h3 className="text-xl font-bold mb-2 text-teal-400">{item.title}</h3>
-                    <p className="text-gray-300">{item.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      
+      
     </div>
   )
 }

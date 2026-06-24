@@ -150,18 +150,16 @@ contactSchema.methods.markAsResponded = function(respondedBy) {
 };
 
 // Pre-save middleware
-contactSchema.pre('save', function(next) {
+contactSchema.pre('save', async function() {
   // Ensure email is lowercase
   if (this.email) {
     this.email = this.email.toLowerCase();
   }
-  
+
   // Clean up phone number formatting
   if (this.phone) {
     this.phone = this.phone.replace(/\s+/g, ' ').trim();
   }
-  
-  next();
 });
 
 // Export the model

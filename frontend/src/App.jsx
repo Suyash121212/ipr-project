@@ -6,6 +6,7 @@ import Dashboard from './UserDashboard'
 import AdminDashboard from './Pages/AdminDashboard'
 import Contact from './Pages/Contact'
 import ProtectRoute from './Components/ProtectRoute'
+import AdminProtectRoute from './Components/AdminProtectRoute'
 import About from './Components/About'
 import Insights from './Components/Insights'
 import PatentServicesPage from './Services/PatentServicesPage'
@@ -44,7 +45,7 @@ function App() {
             />
             <Route
               path="/admin-dashboard"
-              element={<ProtectRoute><AdminDashboard /></ProtectRoute>}
+              element={<AdminProtectRoute><AdminDashboard /></AdminProtectRoute>}
             />
 
             {/* Services */}

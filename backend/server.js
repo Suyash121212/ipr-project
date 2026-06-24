@@ -13,7 +13,7 @@ require("dotenv").config();
 // Import routes
 // ──────────────────────────────────────────────
 const copyrightRoutes = require("./routes/copyright");
-const contactRoutes = require("./routes/contact");
+const contactRoutes = require("./routes/contactRoutes");
 const patentRoutes = require("./routes/patents");
 const consultationRoutes = require("./routes/consultations");
 const paymentRoutes = require("./routes/paymentRoutes");
@@ -139,13 +139,13 @@ app.get("/", (req, res) => {
 // ──────────────────────────────────────────────
 app.use("/api", otpRoutes);
 app.use("/api/copyright", copyrightRoutes);
-app.use("/api", contactRoutes);
 app.use("/api/patents", patentRoutes);
 app.use("/api/consultations", consultationLimiter, consultationRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/communications", communicationRoutes);
 app.use("/api/export", exportRoutes);
+app.use("/api/contact",contactRoutes);
 
 // ──────────────────────────────────────────────
 // Multer error handler
@@ -183,6 +183,7 @@ app.use((req, res) => {
       "/api/consultations",
       "/api/files/download/:fileId",
       "/api/files/view/:fileId",
+      
     ],
   });
 });

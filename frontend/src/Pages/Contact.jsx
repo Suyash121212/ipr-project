@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { Mail, Phone, MapPin, Clock, Globe, Send, CheckCircle, AlertCircle, Loader } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Mail, Phone, MapPin, Clock, Send, CheckCircle, AlertCircle, Loader } from 'lucide-react'
+
+const backend_url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -16,8 +18,7 @@ function Contact() {
   const [validationErrors, setValidationErrors] = useState({})
   const [submitCount, setSubmitCount] = useState(0)
 
-  // Get API URL from environment or use default
-  const API_URL = import.meta.env.VITE_BACKEND_URL || `${backend_url}/api`
+const backend_url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 
   // Form validation function
   const validateForm = () => {
@@ -97,7 +98,7 @@ function Contact() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/contact`, {
+      const response = await fetch(`${backend_url}/api/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
