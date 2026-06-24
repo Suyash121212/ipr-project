@@ -156,6 +156,8 @@ router.post("/send-admin-otp", otpLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Send OTP error:", error);
+    console.error(error.message);
+    console.log(error.data)
 
     return res.status(500).json({
       success: false,
