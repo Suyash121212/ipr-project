@@ -93,6 +93,18 @@ export default function Navbar() {
     }
   };
 
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.services-dropdown')) {
+        setShowServicesDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+
   return (
     <nav
       className="fixed top-0 left-0 w-full z-50 bg-transparent"
@@ -137,24 +149,21 @@ export default function Navbar() {
             </Link>
 
             {/* Services Dropdown — state-based so it doesn't flicker on un-hover */}
-            <div
-              className="relative"
-              onMouseEnter={() => setShowServicesDropdown(true)}
-              onMouseLeave={() => setShowServicesDropdown(false)}
-            >
-              <button className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-teal-600 transition-all duration-300">
+            <div className="relative services-dropdown">
+              <button
+                className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-teal-600 transition-all duration-300"
+                onClick={() => setShowServicesDropdown(!showServicesDropdown)}
+              >
                 <span>Services</span>
                 <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${showServicesDropdown ? "rotate-180" : ""}`} />
               </button>
+
               {showServicesDropdown && (
                 <div className="absolute bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl rounded-xl mt-3 w-64 z-20 border border-gray-200/50 dark:border-gray-600/50 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="p-2">
                     {services.map((service) =>
                       service.name === "separator" ? (
-                        <div
-                          key="separator"
-                          className="border-t border-gray-200 dark:border-gray-600 my-2"
-                        />
+                        <div key="separator" className="border-t border-gray-200 dark:border-gray-600 my-2" />
                       ) : (
                         <Link
                           key={service.name}
