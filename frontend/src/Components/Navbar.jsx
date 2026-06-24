@@ -76,9 +76,7 @@ export default function Navbar() {
   )
     return null;
 
-  // BUG FIX 2: Use React Router's navigate() instead of window.location.href
-  // The original used window.location.href which caused full page reloads,
-  // breaking SPA navigation and losing React state.
+
   const handleNavigation = (path) => {
     setIsOpen(false);
     setShowUserDropdown(false);
@@ -101,11 +99,7 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          {/* BUG FIX 3: Removed redundant onClick on <Link> that called handleNavigation.
-              <Link to="/"> already handles navigation; the onClick caused a double
-              navigation — once via React Router (Link) and once via window.location.href
-              (handleNavigation in the original). Now onClick only closes menus. */}
+
           <Link
             to="/"
             className="flex items-center space-x-2 group"
@@ -115,12 +109,17 @@ export default function Navbar() {
             }}
           >
             <div className="relative">
-              <Scale className="h-8 w-8 text-teal-600 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 ease-out" />
+              {/* <Scale className="h-8 w-8 text-teal-600 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 ease-out" /> */}
+              <img
+                src="/weblogo.png"
+                alt="Logo"
+                className="h-28 w-28 mt-8 object-contain"
+              />
               <div className="absolute inset-0 bg-teal-600/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 ease-out"></div>
             </div>
-            <span className="font-playfair text-xl font-bold bg-gradient-to-r from-gray-900 via-teal-700 to-gray-900 dark:from-white dark:via-teal-400 dark:to-white bg-clip-text text-transparent">
+            {/* <span className="font-playfair text-xl font-bold bg-gradient-to-r from-gray-900 via-teal-700 to-gray-900 dark:from-white dark:via-teal-400 dark:to-white bg-clip-text text-transparent">
               IPSecure Legal
-            </span>
+            </span> */}
           </Link>
 
           {/* Desktop Navigation */}
@@ -148,34 +147,34 @@ export default function Navbar() {
                 <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${showServicesDropdown ? "rotate-180" : ""}`} />
               </button>
               {showServicesDropdown && (
-              <div className="absolute bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl rounded-xl mt-3 w-64 z-20 border border-gray-200/50 dark:border-gray-600/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="p-2">
-                  {services.map((service) =>
-                    service.name === "separator" ? (
-                      <div
-                        key="separator"
-                        className="border-t border-gray-200 dark:border-gray-600 my-2"
-                      />
-                    ) : (
-                      <Link
-                        key={service.name}
-                        to={service.href}
-                        className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-700/80 text-gray-700 dark:text-gray-300 transition-all duration-200 group/item transform hover:scale-[1.02]"
-                        onClick={() => {
-                          setIsOpen(false);
-                          setShowServicesDropdown(false);
-                          setShowUserDropdown(false);
-                        }}
-                      >
-                        <service.icon className="h-4 w-4 text-teal-600 group-hover/item:scale-110 transition-transform duration-200" />
-                        <span className="group-hover/item:text-teal-600 transition-colors duration-200">
-                          {service.name}
-                        </span>
-                      </Link>
-                    )
-                  )}
+                <div className="absolute bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl rounded-xl mt-3 w-64 z-20 border border-gray-200/50 dark:border-gray-600/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="p-2">
+                    {services.map((service) =>
+                      service.name === "separator" ? (
+                        <div
+                          key="separator"
+                          className="border-t border-gray-200 dark:border-gray-600 my-2"
+                        />
+                      ) : (
+                        <Link
+                          key={service.name}
+                          to={service.href}
+                          className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-700/80 text-gray-700 dark:text-gray-300 transition-all duration-200 group/item transform hover:scale-[1.02]"
+                          onClick={() => {
+                            setIsOpen(false);
+                            setShowServicesDropdown(false);
+                            setShowUserDropdown(false);
+                          }}
+                        >
+                          <service.icon className="h-4 w-4 text-teal-600 group-hover/item:scale-110 transition-transform duration-200" />
+                          <span className="group-hover/item:text-teal-600 transition-colors duration-200">
+                            {service.name}
+                          </span>
+                        </Link>
+                      )
+                    )}
+                  </div>
                 </div>
-              </div>
               )}
             </div>
 
@@ -215,8 +214,8 @@ export default function Navbar() {
                   <div className="w-8 h-8 bg-gradient-to-r from-teal-600 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                     {isLoaded && user
                       ? user.firstName?.charAt(0) ||
-                        user.emailAddresses[0]?.emailAddress?.charAt(0) ||
-                        "U"
+                      user.emailAddresses[0]?.emailAddress?.charAt(0) ||
+                      "U"
                       : "U"}
                   </div>
                   <span className="hidden lg:block">Profile</span>

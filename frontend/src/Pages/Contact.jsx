@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, AlertCircle, Loader } from 'lucide-react'
-
-const backend_url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
-
 function Contact() {
   const [formData, setFormData] = useState({
     fullName: '',
